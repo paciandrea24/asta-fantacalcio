@@ -1,20 +1,38 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="it" class="">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tool Asta Fantacalcio - Rock-Solid Multiplayer</title>
-    <!-- Tailwind CSS -->
+    <title>Tool Asta Fantacalcio - Radar Tattico</title>
+    <!-- Tailwind CSS con configurazione Dark Mode -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: {} }
+        }
+    </script>
     <!-- Libreria SheetJS per leggere file Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Librerie Firebase Cloud (v10 compatibili) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
 
-<body class="bg-slate-100 text-slate-800 font-sans p-2 md:p-4 min-h-screen">
+<body
+    class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans p-2 md:p-4 min-h-screen transition-colors duration-200">
 
     <div class="max-w-[1600px] mx-auto space-y-4">
 
@@ -22,43 +40,70 @@
         <!-- 1. SCHERMATA DI SETUP INIZIALE -->
         <!-- ========================================== -->
         <div id="setup-screen"
-            class="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-lg border border-slate-200 mt-12 text-center space-y-6">
+            class="max-w-md mx-auto bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 mt-12 text-center space-y-6">
             <div class="space-y-2">
-                <span class="text-4xl">☁️</span>
-                <h1 class="text-2xl font-bold text-indigo-600">FantaAuction Cloud Setup</h1>
-                <p class="text-sm text-slate-500">Imposta i parametri della tua lega o entra nell'asta sincronizzata.
-                </p>
+                <div
+                    class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-xs">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z">
+                        </path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">FantaAuction Radar Setup</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Imposta i parametri della tua lega o entra
+                    nell'asta sincronizzata.</p>
             </div>
 
             <!-- AVVISO SPECIALE: ASTA CLOUD TROVATA -->
             <div id="cloud-alert"
-                class="hidden bg-emerald-50 border-2 border-emerald-400 p-4 rounded-xl text-left space-y-2 shadow-md animate-pulse">
-                <p class="text-xs font-black text-emerald-800 uppercase flex items-center gap-1">☁️ Asta Live Rilevata
-                    nel Cloud!</p>
-                <p class="text-xs text-emerald-700">Il tuo socio ha già avviato o modificato un'asta online. Vuoi
-                    sincronizzarti?</p>
+                class="hidden bg-emerald-50 dark:bg-emerald-950/60 border-2 border-emerald-400 dark:border-emerald-600 p-4 rounded-xl text-left space-y-2 shadow-md animate-pulse">
+                <p
+                    class="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    <span>Asta Live Rilevata nel Cloud</span>
+                </p>
+                <p class="text-xs text-emerald-700 dark:text-emerald-400">Il tuo socio ha già avviato o modificato
+                    un'asta online. Vuoi sincronizzarti?</p>
                 <button type="button" onclick="entraInAstaCloud()"
-                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm flex justify-center items-center gap-1">
-                    <span>🚀 Entra nell'Asta Live</span>
+                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 rounded-lg text-xs transition shadow-sm flex justify-center items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    <span>Entra nell'Asta Live</span>
                 </button>
             </div>
 
             <div id="resume-alert"
-                class="hidden bg-amber-50 border border-amber-200 p-4 rounded-xl text-left space-y-2">
-                <p class="text-xs font-bold text-amber-800 uppercase flex items-center gap-1">⚠️ Memoria Locale Rilevata
+                class="hidden bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-700 p-4 rounded-xl text-left space-y-2">
+                <p class="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
+                    <span>Memoria Locale Rilevata</span>
                 </p>
-                <p class="text-xs text-amber-700">Hai un'asta salvata in questo PC. Vuoi riprenderla?</p>
+                <p class="text-xs text-amber-700 dark:text-amber-400">Hai un'asta salvata in questo PC. Vuoi
+                    riprenderla?</p>
                 <button type="button" onclick="riprendiAsta()"
-                    class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-xs transition shadow-sm">
-                    ▶️ Riprendi Asta Locale
+                    class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-xs transition shadow-sm flex justify-center items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>Riprendi Asta Locale</span>
                 </button>
             </div>
 
-            <form id="setup-form" onsubmit="avviaNuovaAsta(event)" class="space-y-4 text-left border-t pt-4">
+            <form id="setup-form" onsubmit="avviaNuovaAsta(event)"
+                class="space-y-4 text-left border-t border-slate-200 dark:border-slate-700 pt-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-2 flex justify-between">
+                    <label
+                        class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-2 flex justify-between">
                         <span>Numero Squadre Partecipanti:</span>
-                        <span id="teams-count-val" class="text-indigo-600 font-extrabold text-base">8</span>
+                        <span id="teams-count-val"
+                            class="text-indigo-600 dark:text-indigo-400 font-extrabold text-base">8</span>
                     </label>
                     <input type="range" id="input-num-teams" min="4" max="16" value="8"
                         class="w-full accent-indigo-600 cursor-pointer"
@@ -71,17 +116,33 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Budget Iniziale per Squadra
-                        (Crediti)</label>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">Budget
+                        Iniziale per Squadra (Crediti)</label>
                     <input type="number" id="input-budget" value="500" min="100" step="50" required
-                        class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm font-bold text-indigo-600 focus:ring-indigo-500 focus:border-indigo-500">
+                        class="w-full p-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-bold text-indigo-600 dark:text-indigo-400 focus:ring-indigo-500 focus:border-indigo-500 text-center">
                 </div>
 
                 <button type="submit"
-                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md text-sm">
-                    🚀 Crea Nuova Lega e Sincronizza
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-200 shadow-md text-sm flex justify-center items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span>Crea Nuova Lega e Sincronizza</span>
                 </button>
             </form>
+
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
+                <button type="button" onclick="resettaTutto()"
+                    class="text-[11px] text-rose-500 hover:text-rose-600 dark:text-rose-400 font-bold underline transition flex items-center justify-center gap-1 mx-auto">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                        </path>
+                    </svg>
+                    <span>Rilevi vecchi dati di test? Resetta Memoria e Cloud</span>
+                </button>
+            </div>
         </div>
 
         <!-- ========================================== -->
@@ -89,49 +150,86 @@
         <!-- ========================================== -->
         <div id="auction-dashboard" class="hidden space-y-4">
 
-            <!-- HEADER CON AZIONI GLOBALI COMPATTO -->
+            <!-- HEADER CON AZIONI GLOBALI -->
             <header
-                class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl shadow-xs border border-slate-200 gap-3">
+                class="flex flex-col md:flex-row justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700 gap-3">
                 <div class="flex items-center gap-3">
                     <div>
-                        <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
-                            ⚡ FantaAuction <span
-                                class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full uppercase font-black">ROCK-SOLID</span>
+                        <h1 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            <span>FantaAuction Radar</span>
                         </h1>
-                        <p class="text-xs text-slate-500">Lega a <span id="header-num-teams" class="font-bold">8</span>
-                            squadre | Budget: <span id="header-budget" class="font-bold">500</span> cr</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Lega a <span id="header-num-teams"
+                                class="font-bold">8</span> squadre | Budget: <span id="header-budget"
+                                class="font-bold">500</span> cr</p>
                     </div>
                     <!-- SEMAFORO CLOUD -->
                     <span id="cloud-status-badge"
-                        class="bg-slate-200 text-slate-600 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 shadow-2xs">
-                        ⚪ Locale (Offline)
+                        class="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center shadow-2xs">
+                        <span class="w-2 h-2 rounded-full bg-slate-400 inline-block mr-1.5"></span>
+                        <span>Locale (Offline)</span>
                     </span>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
+                    <!-- TASTO DARK MODE -->
+                    <button type="button" onclick="toggleDarkMode()" id="btn-dark-mode"
+                        class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold p-2.5 rounded-lg transition shadow-2xs"
+                        title="Cambia Tema Notturno/Diurno">
+                        <svg id="icon-moon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                            </path>
+                        </svg>
+                        <svg id="icon-sun" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                            </path>
+                        </svg>
+                    </button>
+
                     <button type="button" onclick="esportaRoseCSV()"
                         class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5 shadow-2xs">
-                        📤 Esporta CSV Rose
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        <span>Esporta CSV Rose</span>
                     </button>
                     <label
                         class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg cursor-pointer transition flex items-center gap-1.5 shadow-2xs">
-                        📥 Importa Excel (.xlsx)
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                        <span>Importa Excel (.xlsx)</span>
                         <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden"
                             onchange="importaExcel(event)">
                     </label>
                     <button type="button" onclick="tornaAlSetup()"
-                        class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold py-2 px-3 rounded-lg transition">
-                        ⚙️ Setup
+                        class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>Setup</span>
                     </button>
                 </div>
             </header>
 
             <!-- BANNER INFO IMPORTAZIONE -->
             <div id="import-banner"
-                class="hidden bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-2 rounded-xl text-xs justify-between items-center shadow-2xs flex">
-                <span id="import-banner-text">✅ Listone importato con successo!</span>
+                class="hidden bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 px-3 py-2 rounded-xl text-xs justify-between items-center shadow-2xs flex">
+                <span id="import-banner-text" class="font-semibold">Listone importato con successo!</span>
                 <button type="button" onclick="document.getElementById('import-banner').classList.add('hidden')"
-                    class="font-bold text-emerald-600 hover:text-emerald-900">&times;</button>
+                    class="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-900">&times;</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -140,9 +238,18 @@
                 <div class="lg:col-span-3 space-y-4">
 
                     <!-- BOX ASSEGNAZIONE RAPIDA -->
-                    <div class="bg-white p-4 rounded-xl shadow-xs border-2 border-indigo-200 space-y-3">
-                        <h2 class="text-base font-black text-slate-800 flex items-center justify-between border-b pb-2">
-                            <span class="flex items-center gap-1.5">⚡ Assegnazione Rapida</span>
+                    <div
+                        class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border-2 border-indigo-200 dark:border-indigo-800 space-y-3">
+                        <h2
+                            class="text-base font-black text-slate-800 dark:text-slate-100 flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+                            <span class="flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span>Assegnazione Rapida</span>
+                            </span>
                             <span class="text-[10px] font-normal text-slate-400">2 Click + Invio</span>
                         </h2>
 
@@ -151,73 +258,122 @@
                                 <label class="block text-[10px] font-extrabold text-slate-400 uppercase mb-1">1.
                                     Svincolato Scelto</label>
                                 <div id="selected-player-box"
-                                    class="p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center text-xs text-slate-400 italic font-medium">
-                                    👈 Clicca su un giocatore in lista
+                                    class="p-2.5 bg-slate-50 dark:bg-slate-700/50 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center text-xs text-slate-400 italic font-medium">
+                                    Seleziona un giocatore dalla lista
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-[10px] font-extrabold text-slate-400 uppercase mb-1">2. Squadra
                                     Acquirente</label>
                                 <div id="teams-grid-select"
-                                    class="grid grid-cols-2 gap-1.5 p-1 bg-slate-50 border border-slate-200 rounded-lg">
+                                    class="grid grid-cols-2 gap-1.5 p-1 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg">
                                     <!-- Popolato via JS -->
                                 </div>
                             </div>
+
                             <div>
                                 <label class="block text-[10px] font-extrabold text-slate-400 uppercase mb-1">3. Prezzo
                                     Pagato (Crediti)</label>
-                                <div class="flex gap-1.5">
-                                    <input type="number" id="input-price" min="1" required placeholder="Prezzo..."
-                                        class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-sm font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
-                                    <button type="submit"
-                                        class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-lg transition duration-200 shadow-xs text-xs shrink-0 flex items-center gap-1">
-                                        <span>🔨 Assegna</span>
-                                    </button>
+                                <div class="space-y-1.5">
+                                    <div class="flex gap-1.5">
+                                        <input type="number" id="input-price" min="1" required placeholder="0"
+                                            class="w-full p-2 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-sm font-black text-indigo-600 dark:text-indigo-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-center">
+                                        <button type="submit"
+                                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-lg transition duration-200 shadow-xs text-xs shrink-0 flex items-center gap-1.5">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            <span>Assegna</span>
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-4 gap-1">
+                                        <button type="button" onclick="modificaPrezzo(-5)"
+                                            class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-1.5 rounded text-xs transition border border-slate-200 dark:border-slate-600">-5</button>
+                                        <button type="button" onclick="modificaPrezzo(-1)"
+                                            class="bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold py-1.5 rounded text-xs transition border border-slate-200 dark:border-slate-600">-1</button>
+                                        <button type="button" onclick="modificaPrezzo(1)"
+                                            class="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold py-1.5 rounded text-xs transition border border-indigo-200 dark:border-indigo-800">+1</button>
+                                        <button type="button" onclick="modificaPrezzo(5)"
+                                            class="bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold py-1.5 rounded text-xs transition border border-indigo-200 dark:border-indigo-800">+5</button>
+                                    </div>
                                 </div>
                             </div>
                         </form>
                     </div>
 
                     <!-- BOX FILTRO E LISTA SVINCOLATI -->
-                    <div class="bg-white p-4 rounded-xl shadow-xs border border-slate-200 flex flex-col h-[440px]">
+                    <div
+                        class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col h-[480px]">
                         <div class="flex justify-between items-center mb-2">
-                            <h2 class="text-base font-bold text-slate-700">📋 Svincolati (<span
-                                    id="free-count">0</span>)</h2>
+                            <h2
+                                class="text-base font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                    </path>
+                                </svg>
+                                <span>Svincolati (<span id="free-count">0</span>)</span>
+                            </h2>
                             <div class="flex space-x-1">
                                 <button type="button" onclick="filtraRuolo('TUTTI')"
-                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-200 hover:bg-slate-300">All</button>
+                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200">All</button>
                                 <button type="button" onclick="filtraRuolo('P')"
-                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-yellow-100 text-yellow-800 hover:bg-yellow-200">P</button>
+                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-yellow-100 dark:bg-yellow-900/60 text-yellow-800 dark:text-yellow-300 hover:bg-yellow-200">P</button>
                                 <button type="button" onclick="filtraRuolo('D')"
-                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-100 text-green-800 hover:bg-green-200">D</button>
+                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300 hover:bg-green-200">D</button>
                                 <button type="button" onclick="filtraRuolo('C')"
-                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-800 hover:bg-blue-200">C</button>
+                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 hover:bg-blue-200">C</button>
                                 <button type="button" onclick="filtraRuolo('A')"
-                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-800 hover:bg-red-200">A</button>
+                                    class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-300 hover:bg-red-200">A</button>
                             </div>
                         </div>
 
-                        <div class="flex gap-1.5 mb-2 items-center">
-                            <input type="text" id="search-player" placeholder="Cerca nome..."
-                                oninput="renderSvincolati()"
-                                class="w-full p-1.5 bg-slate-50 border border-slate-300 rounded text-xs">
-                            <div class="flex space-x-1 shrink-0">
-                                <button type="button" onclick="impostaOrdinamento('fvm-desc')" id="btn-sort-fvm"
-                                    class="px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition">FVM
-                                    ⬇️</button>
-                                <button type="button" onclick="impostaOrdinamento('qta-desc')" id="btn-sort-qta"
-                                    class="px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition">Qt.A
-                                    ⬇️</button>
+                        <!-- BARRA CERCA E FILTRO SQUADRE DI SERIE A -->
+                        <div class="space-y-1.5 mb-2">
+                            <div class="flex gap-1.5 items-center">
+                                <input type="text" id="search-player" placeholder="Cerca nome o squadra..."
+                                    oninput="renderSvincolati()"
+                                    class="w-full p-1.5 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs text-slate-800 dark:text-slate-100">
+                                <div class="flex space-x-1 shrink-0">
+                                    <button type="button" onclick="impostaOrdinamento('fvm-desc')" id="btn-sort-fvm"
+                                        class="px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition flex items-center gap-1">
+                                        <span>FVM</span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" onclick="impostaOrdinamento('qta-desc')" id="btn-sort-qta"
+                                        class="px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition flex items-center gap-1">
+                                        <span>Qt.A</span>
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- MENU A TENDINA SERIE A -->
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">Serie
+                                    A:</span>
+                                <select id="filter-serie-a" onchange="filtraSquadraSerieA(this.value)"
+                                    class="w-full p-1 bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs font-semibold text-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-indigo-500 outline-none">
+                                    <option value="TUTTI">Tutte le squadre</option>
+                                </select>
                             </div>
                         </div>
 
                         <div
-                            class="flex justify-between px-2 py-1 text-[9px] font-bold text-slate-400 uppercase bg-slate-50 rounded-t border-b border-slate-200">
+                            class="flex justify-between px-2 py-1 text-[9px] font-bold text-slate-400 uppercase bg-slate-50 dark:bg-slate-700/50 rounded-t border-b border-slate-200 dark:border-slate-600">
                             <span>Giocatore</span>
                             <span>Statistiche</span>
                         </div>
 
-                        <div class="overflow-y-auto flex-1 border border-slate-100 rounded-b p-1 space-y-1"
+                        <div class="overflow-y-auto flex-1 border border-slate-100 dark:border-slate-700 rounded-b p-1 space-y-1"
                             id="svincolati-list">
                             <!-- Caricato via JS -->
                         </div>
@@ -225,27 +381,34 @@
 
                 </div>
 
-                <!-- COLONNA DESTRA: VISTA ROSE CONTROLLABILE ULTRA-COMPATTA (Span 9/12) -->
+                <!-- COLONNA DESTRA: PANORAMICA ROSE ULTRA-COMPATTA (Span 9/12) -->
                 <div class="lg:col-span-9 space-y-4">
 
-                    <!-- 1. SEZIONE DETTAGLIO ROSE CONTROLLABILE -->
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border-2 border-indigo-100">
+                    <!-- 1. SEZIONE PANORAMICA ROSE E RADAR -->
+                    <div
+                        class="bg-white dark:bg-slate-800 p-4 md:p-6 rounded-xl shadow-md border-2 border-indigo-100 dark:border-indigo-900/40">
 
                         <div
-                            class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 pb-3 border-b gap-3">
+                            class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 pb-3 border-b border-slate-200 dark:border-slate-700 gap-3">
                             <div class="flex flex-wrap items-center gap-2 md:gap-3 shrink-0">
                                 <h2
-                                    class="text-base md:text-lg font-extrabold text-slate-800 flex items-center gap-1.5">
-                                    <span>🔍 Visualizzazione:</span>
+                                    class="text-base md:text-lg font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                    <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                        </path>
+                                    </svg>
+                                    <span>Panoramica Rose:</span>
                                 </h2>
-                                <div class="flex bg-slate-100 p-1 rounded-lg space-x-1">
+                                <div class="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg space-x-1">
                                     <button type="button" onclick="setModeVista('RUOLO')" id="btn-mode-ruolo"
-                                        class="px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white text-indigo-600 shadow-2xs">
-                                        🌐 Tutti i Partecipanti (per Ruolo)
+                                        class="px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-2xs flex items-center gap-1">
+                                        <span>Per Ruolo (Tutti i Partecipanti)</span>
                                     </button>
                                     <button type="button" onclick="setModeVista('SQUADRA')" id="btn-mode-squadra"
-                                        class="px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900">
-                                        👤 Per Singola Squadra
+                                        class="px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1">
+                                        <span>Per Squadra (con Radar Reparti)</span>
                                     </button>
                                 </div>
                             </div>
@@ -254,35 +417,74 @@
                                 class="flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar py-1 w-full xl:w-auto justify-start xl:justify-end">
                                 <button type="button" onclick="setRuoloVista('P')" id="btn-ruolo-P"
                                     class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold transition bg-yellow-500 text-white shadow-xs whitespace-nowrap shrink-0">
-                                    🧤 Portieri (3)
+                                    Portieri (3)
                                 </button>
                                 <button type="button" onclick="setRuoloVista('D')" id="btn-ruolo-D"
-                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-green-100 hover:text-green-800 whitespace-nowrap shrink-0">
-                                    🛡️ Difensori (8)
+                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-green-100 dark:hover:bg-green-900/60 whitespace-nowrap shrink-0">
+                                    Difensori (8)
                                 </button>
                                 <button type="button" onclick="setRuoloVista('C')" id="btn-ruolo-C"
-                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-800 whitespace-nowrap shrink-0">
-                                    ⚙️ Centrocampisti (8)
+                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-blue-100 dark:hover:bg-blue-900/60 whitespace-nowrap shrink-0">
+                                    Centrocampisti (8)
                                 </button>
                                 <button type="button" onclick="setRuoloVista('A')" id="btn-ruolo-A"
-                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-800 whitespace-nowrap shrink-0">
-                                    ⚽ Attaccanti (6)
+                                    class="px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-red-100 dark:hover:bg-red-900/60 whitespace-nowrap shrink-0">
+                                    Attaccanti (6)
                                 </button>
                             </div>
 
                             <div id="controls-squadra" class="hidden flex flex-col items-end w-full xl:w-auto">
                                 <div class="flex items-center gap-2 w-full xl:w-auto">
-                                    <label class="text-xs font-bold text-slate-500 whitespace-nowrap">Squadra:</label>
+                                    <label
+                                        class="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">Squadra:</label>
                                     <select id="view-team-select" onchange="cambiaVistaRosa(this.value)"
-                                        class="w-full xl:w-auto p-1.5 bg-indigo-50/50 border border-indigo-200 rounded-lg text-xs font-bold text-indigo-700 focus:ring-indigo-500 focus:border-indigo-500">
+                                        class="w-full xl:w-auto p-1.5 bg-indigo-50/50 dark:bg-slate-700 border border-indigo-200 dark:border-slate-600 rounded-lg text-xs font-bold text-indigo-700 dark:text-indigo-300 focus:ring-indigo-500 focus:border-indigo-500">
                                     </select>
                                 </div>
-                                <p class="text-[10px] text-slate-400 mt-0.5" id="current-team-stats-summary">Crediti
-                                    Residui: - | Max Offerta: -</p>
+                                <p class="text-[10px] text-slate-400 dark:text-slate-400 mt-0.5"
+                                    id="current-team-stats-summary">Crediti Residui: - | Max Offerta: -</p>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3" id="roster-view">
+                        <!-- BARRA RADAR STRATEGICO DEL BUDGET -->
+                        <div id="radar-reparti-box"
+                            class="hidden mb-4 bg-slate-50 dark:bg-slate-700/40 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1.5 shadow-inner">
+                            <div class="flex justify-between items-center text-[11px] font-extrabold flex-wrap gap-1">
+                                <span class="text-slate-600 dark:text-slate-300 flex items-center gap-1"><svg
+                                        class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 inline-block"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                                    </svg><span>RADAR STRATEGICO REPARTI:</span></span>
+                                <div class="flex space-x-3 text-[10px] sm:text-[11px]">
+                                    <span class="text-yellow-600 dark:text-yellow-400" id="radar-stat-P">P: 0 cr
+                                        (0%)</span>
+                                    <span class="text-green-600 dark:text-green-400" id="radar-stat-D">D: 0 cr
+                                        (0%)</span>
+                                    <span class="text-blue-600 dark:text-blue-400" id="radar-stat-C">C: 0 cr (0%)</span>
+                                    <span class="text-red-600 dark:text-red-400" id="radar-stat-A">A: 0 cr (0%)</span>
+                                    <span class="text-emerald-600 dark:text-emerald-400" id="radar-stat-Res">Res: 500 cr
+                                        (100%)</span>
+                                </div>
+                            </div>
+                            <!-- Barra Progressiva Multi-colore -->
+                            <div
+                                class="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-full flex overflow-hidden shadow-xs">
+                                <div id="bar-P" style="width: 0%" class="bg-yellow-500 transition-all duration-300"
+                                    title="Spesa Portieri"></div>
+                                <div id="bar-D" style="width: 0%" class="bg-green-500 transition-all duration-300"
+                                    title="Spesa Difensori"></div>
+                                <div id="bar-C" style="width: 0%" class="bg-blue-500 transition-all duration-300"
+                                    title="Spesa Centrocampisti"></div>
+                                <div id="bar-A" style="width: 0%" class="bg-red-500 transition-all duration-300"
+                                    title="Spesa Attaccanti"></div>
+                            </div>
+                        </div>
+
+                        <!-- GRIGLIA ROSE: ORA OTTIMIZZATA PER COMPATTEZZA SU TABLET E PC -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5" id="roster-view">
                             <!-- Caricato via JS -->
                         </div>
                     </div>
@@ -290,38 +492,55 @@
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
                         <!-- CRONOLOGIA ACQUISTI -->
                         <div
-                            class="md:col-span-5 bg-white p-4 rounded-xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                            class="md:col-span-5 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="text-sm font-bold text-slate-700 flex items-center gap-1">
-                                    <span>📜 Cronologia</span>
+                                <h3
+                                    class="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>Cronologia</span>
                                     <span
-                                        class="text-[10px] font-normal bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded">In
+                                        class="text-[10px] font-normal bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-1.5 py-0.2 rounded ml-1">In
                                         fondo &darr;</span>
                                 </h3>
                                 <span class="text-[11px] font-normal text-slate-400">Tot: <span id="tot-assigned-count"
-                                        class="font-bold text-slate-600">0</span></span>
+                                        class="font-bold text-slate-600 dark:text-slate-300">0</span></span>
                             </div>
                             <div id="history-list-container"
-                                class="border border-slate-100 rounded-lg p-1.5 max-h-40 overflow-y-auto bg-slate-50/50 flex-1">
+                                class="border border-slate-100 dark:border-slate-700 rounded-lg p-1.5 max-h-40 overflow-y-auto bg-slate-50/50 dark:bg-slate-700/30 flex-1">
                                 <div id="history-list" class="space-y-1"></div>
                             </div>
                         </div>
 
                         <!-- TABELLONE RIEPILOGO COMPATTO LEGA -->
-                        <div class="md:col-span-7 bg-white p-4 rounded-xl shadow-xs border border-slate-200">
-                            <h3 class="text-sm font-bold mb-2 text-slate-700 flex justify-between items-center">
-                                <span>📊 Riepilogo Compatto Lega</span>
+                        <div
+                            class="md:col-span-7 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700">
+                            <h3
+                                class="text-sm font-bold mb-2 text-slate-700 dark:text-slate-200 flex justify-between items-center">
+                                <span class="flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1.01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                        </path>
+                                    </svg>
+                                    <span>Riepilogo Compatto Lega</span>
+                                </span>
                                 <span class="text-[10px] font-normal text-slate-400">Clicca sul nome per vista singola o
-                                    su ✏️ per rinominare</span>
+                                    sull'icona per rinominare</span>
                             </h3>
                             <div class="overflow-x-auto max-h-48">
-                                <table class="w-full text-xs text-left text-slate-600">
+                                <table class="w-full text-xs text-left text-slate-600 dark:text-slate-300">
                                     <thead
-                                        class="text-[10px] text-slate-700 uppercase bg-slate-50 border-b sticky top-0">
+                                        class="text-[10px] text-slate-700 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-700 border-b dark:border-slate-600 sticky top-0">
                                         <tr>
                                             <th class="py-1.5 px-2">Squadra</th>
                                             <th class="py-1.5 px-2">Residui</th>
-                                            <th class="py-1.5 px-2 text-indigo-600 font-bold">Max Off.</th>
+                                            <th class="py-1.5 px-2 text-indigo-600 dark:text-indigo-400 font-bold">Max
+                                                Off.</th>
                                             <th class="py-1.5 px-1 text-center">P</th>
                                             <th class="py-1.5 px-1 text-center">D</th>
                                             <th class="py-1.5 px-1 text-center">C</th>
@@ -329,7 +548,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="teams-table-body"
-                                        class="divide-y divide-slate-100 font-medium text-[11px]">
+                                        class="divide-y divide-slate-100 dark:divide-slate-700 font-medium text-[11px]">
                                         <!-- Caricato via JS -->
                                     </tbody>
                                 </table>
@@ -366,6 +585,7 @@
         let BUDGET_INIZIALE = 500;
         const MAX_SLOTS = { P: 3, D: 8, C: 8, A: 6 };
         let ruoloFiltro = 'TUTTI';
+        let squadraSerieAFiltro = 'TUTTI';
         let ordinamentoAttuale = 'fvm-desc';
         let modeVistaRosa = 'RUOLO';
         let squadraSelezionataVista = 0;
@@ -387,6 +607,34 @@
             { id: 14, name: "VLAHOVIC", role: "A", team: "Juventus", status: "free", fvm: 150, qta: 31 }
         ];
         let historyLog = [];
+
+        // --- GESTIONE TEMA NOTTURNO (DARK MODE) ---
+        function initDarkMode() {
+            if (localStorage.getItem('fanta_dark_mode') === '1') {
+                document.documentElement.classList.add('dark');
+                aggiornaIconeDarkMode(true);
+            }
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('fanta_dark_mode', isDark ? '1' : '0');
+            aggiornaIconeDarkMode(isDark);
+        }
+
+        function aggiornaIconeDarkMode(isDark) {
+            const iconMoon = document.getElementById('icon-moon');
+            const iconSun = document.getElementById('icon-sun');
+            if (!iconMoon || !iconSun) return;
+            if (isDark) {
+                iconMoon.classList.add('hidden');
+                iconSun.classList.remove('hidden');
+            } else {
+                iconMoon.classList.remove('hidden');
+                iconSun.classList.add('hidden');
+            }
+        }
 
         // SCUDO ANTI-CRASH PER DATI FIREBASE
         function sanitizzaDati(listaSquadre, listaGiocatori, listaCronologia) {
@@ -418,8 +666,8 @@
                     firebaseConnesso = true;
 
                     const badge = document.getElementById('cloud-status-badge');
-                    badge.innerHTML = '🟢 Cloud Connesso';
-                    badge.className = 'bg-emerald-100 text-emerald-800 border border-emerald-300 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1.5 shadow-2xs';
+                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5"></span><span>Cloud Connesso</span>';
+                    badge.className = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center shadow-2xs';
 
                     dbRef.on('value', (snapshot) => {
                         const data = snapshot.val();
@@ -431,6 +679,8 @@
                             historyLog = puliti.historyLog;
                             if (data.budget) BUDGET_INIZIALE = data.budget;
 
+                            popolaFiltroSerieA();
+
                             if (!astaIniziata && document.getElementById('setup-screen')) {
                                 document.getElementById('cloud-alert').classList.remove('hidden');
                             } else if (astaIniziata) {
@@ -441,7 +691,7 @@
                     });
                 } catch (err) {
                     console.error("Errore inizializzazione Cloud:", err);
-                    alert("⚠️ Attenzione: Impossibile connettersi al Cloud. Verifica di aver incollato correttamente le chiavi Firebase.");
+                    alert("Attenzione: Impossibile connettersi al Cloud. Verifica di aver incollato correttamente le chiavi Firebase.");
                 }
             }
         }
@@ -488,6 +738,7 @@
             squadraSelezionataVista = 0; modeVistaRosa = 'RUOLO';
             giocatoreSelezionatoPerAsta = null; squadraSelezionataPerAsta = null;
 
+            popolaFiltroSerieA();
             salvaDati(); mostraDashboard();
         }
 
@@ -502,6 +753,7 @@
                 teams = puliti.teams; players = puliti.players; historyLog = puliti.historyLog;
                 if (savedBudget) BUDGET_INIZIALE = parseInt(savedBudget);
                 squadraSelezionataVista = teams.length > 0 ? teams[0].id : 0;
+                popolaFiltroSerieA();
                 mostraDashboard();
             }
         }
@@ -529,10 +781,22 @@
             if (nuovoNome && nuovoNome.trim() !== "") { team.name = nuovoNome.trim(); salvaDati(); renderTutto(); }
         }
 
+        function resettaTutto() {
+            if (confirm("Sei sicuro di voler svuotare la memoria locale e il database Cloud? Usalo per pulire i vecchi test prima di iniziare la vera asta!")) {
+                localStorage.clear();
+                if (firebaseConnesso && dbRef) {
+                    dbRef.remove().catch(err => console.error("Errore reset cloud:", err));
+                }
+                document.getElementById('cloud-alert').classList.add('hidden');
+                document.getElementById('resume-alert').classList.add('hidden');
+                alert("Memoria e Cloud puliti con successo! Ora puoi iniziare l'asta da una situazione pulita.");
+            }
+        }
+
         // --- 4. IMPORTAZIONE EXCEL (.XLSX) BLINDATA ---
         function importaExcel(event) {
             if (typeof XLSX === 'undefined') {
-                alert("❌ Errore critico: Libreria di lettura Excel non caricata! Controlla di essere connesso a internet quando apri il file.");
+                alert("Errore critico: Libreria di lettura Excel non caricata! Controlla di essere connesso a internet quando apri il file.");
                 return;
             }
             const file = event.target.files[0];
@@ -552,7 +816,7 @@
                         if (rowStr.includes('NOME') && (rowStr.includes('R') || rowStr.includes('RUOLO'))) { headerIdx = i; break; }
                     }
 
-                    if (headerIdx === -1) { alert("❌ Errore: Impossibile trovare le colonne 'Nome' e 'R' nel file Excel. Assicurati di usare il listone ufficiale!"); return; }
+                    if (headerIdx === -1) { alert("Errore: Impossibile trovare le colonne 'Nome' e 'R' nel file Excel. Assicurati di usare il listone ufficiale!"); return; }
                     const headers = rows[headerIdx].map(h => String(h || '').trim().toUpperCase());
                     const idxId = headers.indexOf('ID'); const idxR = headers.indexOf('R');
                     const idxNome = headers.indexOf('NOME'); const idxSquadra = headers.indexOf('SQUADRA');
@@ -574,12 +838,13 @@
                         players = nuoviGiocatori;
                         teams.forEach(t => t.players = []); historyLog = [];
                         giocatoreSelezionatoPerAsta = null; squadraSelezionataPerAsta = null;
+                        popolaFiltroSerieA();
                         salvaDati(); renderTutto();
                         const banner = document.getElementById('import-banner');
-                        document.getElementById('import-banner-text').innerText = `✅ Successo! Importati ${nuoviGiocatori.length} giocatori con FVM e Quotazioni!`;
+                        document.getElementById('import-banner-text').innerText = `Listone importato con successo! (${nuoviGiocatori.length} giocatori)`;
                         banner.classList.remove('hidden');
-                    } else { alert("❌ Nessun giocatore valido trovato nel file."); }
-                } catch (err) { alert("❌ Errore durante la lettura del file Excel: " + err.message); }
+                    } else { alert("Nessun giocatore valido trovato nel file."); }
+                } catch (err) { alert("Errore durante la lettura del file Excel: " + err.message); }
             };
             reader.readAsArrayBuffer(file);
         }
@@ -616,17 +881,19 @@
                 const stats = calcolaStatisticheSquadra(team);
                 const isSelected = (modeVistaRosa === 'SQUADRA' && team.id == squadraSelezionataVista);
                 tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition cursor-pointer ${isSelected ? 'bg-indigo-50/70 font-bold text-indigo-900 border-l-4 border-indigo-600' : ''}" onclick="cliccaRigaSquadra(${team.id})">
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition cursor-pointer ${isSelected ? 'bg-indigo-50/70 dark:bg-indigo-950/60 font-bold text-indigo-900 dark:text-indigo-200 border-l-4 border-indigo-600 dark:border-indigo-400' : ''}" onclick="cliccaRigaSquadra(${team.id})">
                         <td class="py-1.5 px-2 flex items-center space-x-1.5 truncate max-w-[120px]">
                             <span>${team.name}</span>
-                            <button type="button" onclick="event.stopPropagation(); rinominaSquadra(${team.id});" class="text-slate-400 hover:text-indigo-600 text-[10px]" title="Rinomina Squadra">✏️</button>
+                            <button type="button" onclick="event.stopPropagation(); rinominaSquadra(${team.id});" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-0.5" title="Rinomina Squadra">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
                         </td>
-                        <td class="py-1.5 px-2 text-emerald-600 font-bold">${stats.residui}</td>
-                        <td class="py-1.5 px-2 text-indigo-600 font-bold">${stats.maxOfferta}</td>
-                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.P === MAX_SLOTS.P ? 'text-emerald-600 font-bold bg-emerald-100/60 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500'}">${stats.slotOccupati.P}/${MAX_SLOTS.P}</span></td>
-                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.D === MAX_SLOTS.D ? 'text-emerald-600 font-bold bg-emerald-100/60 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500'}">${stats.slotOccupati.D}/${MAX_SLOTS.D}</span></td>
-                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.C === MAX_SLOTS.C ? 'text-emerald-600 font-bold bg-emerald-100/60 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500'}">${stats.slotOccupati.C}/${MAX_SLOTS.C}</span></td>
-                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.A === MAX_SLOTS.A ? 'text-emerald-600 font-bold bg-emerald-100/60 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500'}">${stats.slotOccupati.A}/${MAX_SLOTS.A}</span></td>
+                        <td class="py-1.5 px-2 text-emerald-600 dark:text-emerald-400 font-bold">${stats.residui}</td>
+                        <td class="py-1.5 px-2 text-indigo-600 dark:text-indigo-400 font-bold">${stats.maxOfferta}</td>
+                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.P === MAX_SLOTS.P ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100/60 dark:bg-emerald-950/80 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500 dark:text-slate-400'}">${stats.slotOccupati.P}/${MAX_SLOTS.P}</span></td>
+                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.D === MAX_SLOTS.D ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100/60 dark:bg-emerald-950/80 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500 dark:text-slate-400'}">${stats.slotOccupati.D}/${MAX_SLOTS.D}</span></td>
+                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.C === MAX_SLOTS.C ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100/60 dark:bg-emerald-950/80 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500 dark:text-slate-400'}">${stats.slotOccupati.C}/${MAX_SLOTS.C}</span></td>
+                        <td class="py-1.5 px-1 text-center"><span class="${stats.slotOccupati.A === MAX_SLOTS.A ? 'text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100/60 dark:bg-emerald-950/80 px-1 py-0.2 rounded text-[10px]' : 'text-slate-500 dark:text-slate-400'}">${stats.slotOccupati.A}/${MAX_SLOTS.A}</span></td>
                     </tr>`;
             });
         }
@@ -637,8 +904,8 @@
             teams.forEach(t => {
                 const stats = calcolaStatisticheSquadra(t);
                 const isActive = (squadraSelezionataPerAsta === t.id);
-                const btnClass = isActive ? 'bg-indigo-600 text-white font-extrabold border-indigo-700 shadow-md ring-2 ring-indigo-300' : 'bg-white hover:bg-indigo-50/60 text-slate-700 border-slate-200 hover:border-indigo-300 font-semibold';
-                const badgeClass = isActive ? 'bg-indigo-700 text-indigo-100 font-mono px-1 rounded text-[9px]' : 'bg-emerald-50 text-emerald-700 font-bold font-mono px-1 rounded text-[9px] border border-emerald-200';
+                const btnClass = isActive ? 'bg-indigo-600 text-white font-extrabold border-indigo-700 dark:border-indigo-500 shadow-md ring-2 ring-indigo-300 dark:ring-indigo-700' : 'bg-white dark:bg-slate-700 hover:bg-indigo-50/60 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-indigo-300 font-semibold';
+                const badgeClass = isActive ? 'bg-indigo-700 text-indigo-100 font-mono px-1 rounded text-[9px]' : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold font-mono px-1 rounded text-[9px] border border-emerald-200 dark:border-emerald-800';
                 container.innerHTML += `
                     <button type="button" onclick="selezionaSquadraPerAsta(${t.id})" class="p-2 rounded-lg text-left text-xs transition border flex justify-between items-center truncate ${btnClass}">
                         <span class="truncate pr-1">${t.name}</span><span class="${badgeClass} shrink-0">${stats.residui}</span>
@@ -655,29 +922,31 @@
         function renderPlayerSceltoBox() {
             const box = document.getElementById('selected-player-box');
             if (!giocatoreSelezionatoPerAsta) {
-                box.className = "p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center text-xs text-slate-400 italic font-medium";
-                box.innerHTML = "👈 Clicca su un giocatore in lista"; return;
+                box.className = "p-2.5 bg-slate-50 dark:bg-slate-700/50 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg text-center text-xs text-slate-400 italic font-medium";
+                box.innerHTML = "Seleziona un giocatore dalla lista"; return;
             }
             const p = players.find(x => x.id === giocatoreSelezionatoPerAsta);
             if (!p) return;
-            let badgeColor = "bg-slate-200 text-slate-800";
-            if (p.role === 'P') badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
-            if (p.role === 'D') badgeColor = "bg-green-100 text-green-800 border-green-300";
-            if (p.role === 'C') badgeColor = "bg-blue-100 text-blue-800 border-blue-300";
-            if (p.role === 'A') badgeColor = "bg-red-100 text-red-800 border-red-300";
-            box.className = "p-2 bg-indigo-50/80 border-2 border-indigo-400 rounded-lg flex justify-between items-center text-xs shadow-2xs";
+            let badgeColor = "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200";
+            if (p.role === 'P') badgeColor = "bg-yellow-100 dark:bg-yellow-900/60 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700";
+            if (p.role === 'D') badgeColor = "bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700";
+            if (p.role === 'C') badgeColor = "bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700";
+            if (p.role === 'A') badgeColor = "bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700";
+            box.className = "p-2 bg-indigo-50/80 dark:bg-indigo-950/60 border-2 border-indigo-400 dark:border-indigo-600 rounded-lg flex justify-between items-center text-xs shadow-2xs";
 
             const statShown = (ordinamentoAttuale === 'qta-desc') ? `Qt.A: ${p.qta || '-'}` : `FVM: ${p.fvm || '-'}`;
 
             box.innerHTML = `
                 <div class="flex items-center space-x-1.5 truncate pr-1">
                     <span class="font-black px-1.5 py-0.5 rounded border ${badgeColor} text-[10px]">${p.role}</span>
-                    <span class="font-extrabold text-slate-900 text-sm truncate">${p.name}</span>
-                    <span class="text-slate-500 text-[10px]">(${p.team})</span>
+                    <span class="font-extrabold text-slate-900 dark:text-white text-sm truncate">${p.name}</span>
+                    <span class="text-slate-500 dark:text-slate-400 text-[10px]">(${p.team})</span>
                 </div>
                 <div class="flex items-center space-x-1 shrink-0">
                     <span class="bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded text-[10px]" title="Statistica">${statShown}</span>
-                    <button type="button" onclick="annullaSelezioneGiocatore()" class="text-slate-400 hover:text-rose-600 font-bold ml-1 px-1" title="Annulla selezione">❌</button>
+                    <button type="button" onclick="annullaSelezioneGiocatore()" class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1" title="Annulla selezione">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>`;
         }
 
@@ -685,14 +954,35 @@
             ordinamentoAttuale = sortMode;
             const btnFvm = document.getElementById('btn-sort-fvm'); const btnQta = document.getElementById('btn-sort-qta');
             if (sortMode === 'fvm-desc') {
-                btnFvm.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition";
-                btnQta.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition";
+                btnFvm.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition flex items-center gap-1";
+                btnQta.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition flex items-center gap-1";
             } else {
-                btnFvm.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 text-slate-700 hover:bg-slate-300 transition";
-                btnQta.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition";
+                btnFvm.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 transition flex items-center gap-1";
+                btnQta.className = "px-2 py-1.5 text-[10px] font-bold rounded bg-indigo-600 text-white shadow-xs transition flex items-center gap-1";
             }
             renderSvincolati();
             renderPlayerSceltoBox();
+        }
+
+        // --- GESTIONE FILTRO RAPIDO SERIE A ---
+        function popolaFiltroSerieA() {
+            const select = document.getElementById('filter-serie-a');
+            if (!select) return;
+            const currentVal = select.value || 'TUTTI';
+            const teamsSet = new Set();
+            players.forEach(p => {
+                if (p.team && p.team !== "Svincolato") teamsSet.add(p.team.trim());
+            });
+            const sortedTeams = Array.from(teamsSet).sort();
+            select.innerHTML = '<option value="TUTTI">Tutte le squadre (Serie A)</option>';
+            sortedTeams.forEach(t => {
+                select.innerHTML += `<option value="${t.toUpperCase()}" ${t.toUpperCase() === currentVal ? 'selected' : ''}>${t}</option>`;
+            });
+        }
+
+        function filtraSquadraSerieA(val) {
+            squadraSerieAFiltro = val;
+            renderSvincolati();
         }
 
         function renderSvincolati() {
@@ -702,6 +992,7 @@
             let filtrati = players.filter(p => {
                 if (p.status !== 'free') return false;
                 if (ruoloFiltro !== 'TUTTI' && p.role !== ruoloFiltro) return false;
+                if (squadraSerieAFiltro !== 'TUTTI' && p.team.toUpperCase() !== squadraSerieAFiltro) return false;
                 if (search && !p.name.toLowerCase().includes(search) && !p.team.toLowerCase().includes(search)) return false;
                 return true;
             });
@@ -714,22 +1005,22 @@
             if (filtrati.length === 0) { list.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Nessun giocatore trovato</p>'; return; }
             const daMostrare = filtrati.slice(0, 100);
             daMostrare.forEach(p => {
-                let badgeColor = "bg-slate-200 text-slate-800";
-                if (p.role === 'P') badgeColor = "bg-yellow-100 text-yellow-800 border-yellow-300";
-                if (p.role === 'D') badgeColor = "bg-green-100 text-green-800 border-green-300";
-                if (p.role === 'C') badgeColor = "bg-blue-100 text-blue-800 border-blue-300";
-                if (p.role === 'A') badgeColor = "bg-red-100 text-red-800 border-red-300";
+                let badgeColor = "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200";
+                if (p.role === 'P') badgeColor = "bg-yellow-100 dark:bg-yellow-900/60 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700";
+                if (p.role === 'D') badgeColor = "bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700";
+                if (p.role === 'C') badgeColor = "bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700";
+                if (p.role === 'A') badgeColor = "bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700";
                 const isSelected = (giocatoreSelezionatoPerAsta === p.id);
-                const rowStyle = isSelected ? 'bg-indigo-100/90 border-indigo-400 font-bold ring-1 ring-indigo-300' : 'hover:bg-slate-50 border-transparent hover:border-slate-200';
+                const rowStyle = isSelected ? 'bg-indigo-100/90 dark:bg-indigo-950/80 border-indigo-400 dark:border-indigo-600 font-bold ring-1 ring-indigo-300' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 border-transparent hover:border-slate-200 dark:hover:border-slate-600';
 
                 let statBoxHTML = '';
                 if (ordinamentoAttuale === 'qta-desc') {
                     statBoxHTML = `
-                        <span class="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.2 rounded text-[10px]" title="Quotazione">Qt.A: ${p.qta || '-'}</span>
+                        <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold px-1.5 py-0.2 rounded text-[10px]" title="Quotazione">Qt.A: ${p.qta || '-'}</span>
                         <span class="text-slate-400 text-[9px]" title="FantaValore">FVM:${p.fvm || '-'}</span>`;
                 } else {
                     statBoxHTML = `
-                        <span class="bg-indigo-50 text-indigo-700 font-bold px-1.5 py-0.2 rounded text-[10px]" title="FantaValore">FVM: ${p.fvm || '-'}</span>
+                        <span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold px-1.5 py-0.2 rounded text-[10px]" title="FantaValore">FVM: ${p.fvm || '-'}</span>
                         <span class="text-slate-400 text-[9px]" title="Quotazione">Qt:${p.qta || '-'}</span>`;
                 }
 
@@ -737,32 +1028,38 @@
                     <div class="flex justify-between items-center p-1.5 rounded border cursor-pointer text-[11px] transition ${rowStyle}" onclick="selezionaDaLista(${p.id})">
                         <div class="flex items-center space-x-1.5 truncate pr-1">
                             <span class="font-bold px-1 py-0.2 rounded border ${badgeColor} text-[9px]">${p.role}</span>
-                            <span class="font-bold text-slate-800">${p.name}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100">${p.name}</span>
                             <span class="text-slate-400 text-[10px]">(${p.team})</span>
                         </div>
                         <div class="flex items-center space-x-1.5 shrink-0">
                             ${statBoxHTML}
-                            <span class="text-indigo-600 font-bold text-[10px] hover:underline">${isSelected ? '✅ Scelto' : '+'}</span>
+                            <span class="text-indigo-600 dark:text-indigo-400 font-bold text-[10px] hover:underline">${isSelected ? 'Selezionato' : '+ Aggiungi'}</span>
                         </div>
                     </div>`;
             });
         }
 
+        // --- RENDERING VISTA ROSA: ADATTIVO SU MISURA PER COMPATTEZZA E SENZA SCROLL ---
         function renderVistaRosa() {
             const container = document.getElementById('roster-view');
+            const radarBox = document.getElementById('radar-reparti-box');
             container.innerHTML = '';
             const colori = { P: 'yellow', D: 'green', C: 'blue', A: 'red' };
             const nomiRuoli = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', A: 'Attaccanti' };
 
             const btnSq = document.getElementById('btn-mode-squadra'); const btnRu = document.getElementById('btn-mode-ruolo');
             if (modeVistaRosa === 'SQUADRA') {
-                btnSq.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white text-indigo-600 shadow-2xs";
-                btnRu.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
-                document.getElementById('controls-squadra').classList.remove('hidden'); document.getElementById('controls-ruolo').classList.add('hidden');
+                btnSq.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-2xs flex items-center gap-1";
+                btnRu.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1";
+                document.getElementById('controls-squadra').classList.remove('hidden');
+                document.getElementById('controls-ruolo').classList.add('hidden');
+                if (radarBox) radarBox.classList.remove('hidden');
             } else {
-                btnSq.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 hover:text-slate-900";
-                btnRu.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white text-indigo-600 shadow-2xs";
-                document.getElementById('controls-squadra').classList.add('hidden'); document.getElementById('controls-ruolo').classList.remove('hidden');
+                btnSq.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1";
+                btnRu.className = "px-2.5 md:px-3 py-1 rounded-md text-xs font-bold transition bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-300 shadow-2xs flex items-center gap-1";
+                document.getElementById('controls-squadra').classList.add('hidden');
+                document.getElementById('controls-ruolo').classList.remove('hidden');
+                if (radarBox) radarBox.classList.add('hidden');
                 document.getElementById('controls-ruolo').className = "flex flex-nowrap items-center gap-1 overflow-x-auto no-scrollbar py-1 w-full xl:w-auto justify-start xl:justify-end";
                 ['P', 'D', 'C', 'A'].forEach(r => {
                     const b = document.getElementById(`btn-ruolo-${r}`);
@@ -770,7 +1067,7 @@
                         let bg = r === 'P' ? 'yellow-500' : (r === 'D' ? 'green-600' : (r === 'C' ? 'blue-600' : 'red-600'));
                         b.className = `px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold transition bg-${bg} text-white shadow-xs whitespace-nowrap shrink-0`;
                     } else {
-                        b.className = "px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 text-slate-700 hover:bg-slate-200 whitespace-nowrap shrink-0";
+                        b.className = "px-2 sm:px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-bold transition bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 whitespace-nowrap shrink-0";
                     }
                 });
             }
@@ -779,54 +1076,108 @@
                 const team = teams.find(t => t.id == squadraSelezionataVista);
                 if (!team) return;
                 const stats = calcolaStatisticheSquadra(team);
-                document.getElementById('current-team-stats-summary').innerHTML = `Rosa: <strong class="text-slate-700">${stats.totaleGiocatori}/25</strong> | Res: <strong class="text-emerald-600">${stats.residui}</strong> / ${team.budget} cr | Max Off: <strong class="text-indigo-600">${stats.maxOfferta} cr</strong>`;
+                document.getElementById('current-team-stats-summary').innerHTML = `Rosa: <strong class="text-slate-700 dark:text-slate-200">${stats.totaleGiocatori}/25</strong> | Res: <strong class="text-emerald-600 dark:text-emerald-400">${stats.residui}</strong> / ${team.budget} cr | Max Off: <strong class="text-indigo-600 dark:text-indigo-400">${stats.maxOfferta} cr</strong>`;
+
+                // CALCOLO RADAR STRATEGICO REPARTI
+                const spesiP = (team.players || []).filter(p => p.role === 'P').reduce((a, b) => a + (b.price || 0), 0);
+                const spesiD = (team.players || []).filter(p => p.role === 'D').reduce((a, b) => a + (b.price || 0), 0);
+                const spesiC = (team.players || []).filter(p => p.role === 'C').reduce((a, b) => a + (b.price || 0), 0);
+                const spesiA = (team.players || []).filter(p => p.role === 'A').reduce((a, b) => a + (b.price || 0), 0);
+                const percP = Math.round((spesiP / team.budget) * 100) || 0;
+                const percD = Math.round((spesiD / team.budget) * 100) || 0;
+                const percC = Math.round((spesiC / team.budget) * 100) || 0;
+                const percA = Math.round((spesiA / team.budget) * 100) || 0;
+                const percRes = Math.max(0, 100 - (percP + percD + percC + percA));
+
+                if (document.getElementById('radar-stat-P')) {
+                    document.getElementById('radar-stat-P').innerText = `P: ${spesiP} cr (${percP}%)`;
+                    document.getElementById('radar-stat-D').innerText = `D: ${spesiD} cr (${percD}%)`;
+                    document.getElementById('radar-stat-C').innerText = `C: ${spesiC} cr (${percC}%)`;
+                    document.getElementById('radar-stat-A').innerText = `A: ${spesiA} cr (${percA}%)`;
+                    document.getElementById('radar-stat-Res').innerText = `Res: ${stats.residui} cr (${percRes}%)`;
+                    document.getElementById('bar-P').style.width = `${percP}%`;
+                    document.getElementById('bar-D').style.width = `${percD}%`;
+                    document.getElementById('bar-C').style.width = `${percC}%`;
+                    document.getElementById('bar-A').style.width = `${percA}%`;
+                }
 
                 ['P', 'D', 'C', 'A'].forEach(ruolo => {
                     const giocNelRuolo = (team.players || []).filter(p => p.role === ruolo);
+                    const isMultiCol = (ruolo === 'D' || ruolo === 'C' || ruolo === 'A');
                     let htmlGiocatori = '';
+
                     giocNelRuolo.forEach(p => {
-                        htmlGiocatori += `
-                            <div class="flex justify-between items-center bg-slate-50 hover:bg-slate-100 p-1.5 rounded border border-slate-200 text-xs transition">
-                                <div class="truncate pr-1"><span class="font-bold text-slate-800">${p.name}</span><span class="text-[9px] text-slate-500 bg-slate-200 px-1 py-0.2 rounded ml-1">${p.team}</span></div>
-                                <span class="font-extrabold text-indigo-600 bg-indigo-50 px-1 py-0.2 rounded text-[11px] shrink-0">${p.price} cr</span>
-                            </div>`;
+                        if (isMultiCol) {
+                            htmlGiocatori += `
+                                <div class="bg-slate-50 dark:bg-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 p-1.5 rounded border border-slate-200 dark:border-slate-600 transition flex flex-col justify-between gap-1 shadow-2xs" title="${p.name} (${p.team}) - ${p.price} cr">
+                                    <div class="font-bold text-slate-800 dark:text-slate-100 text-[11px] truncate w-full leading-tight">${p.name}</div>
+                                    <div class="flex justify-between items-center w-full text-[10px]">
+                                        <span class="text-[9px] text-slate-500 dark:text-slate-300 bg-slate-200 dark:bg-slate-600 px-1 py-0.2 rounded font-mono uppercase">${p.team.substring(0, 3)}</span>
+                                        <span class="font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.2 rounded shrink-0">${p.price} cr</span>
+                                    </div>
+                                </div>`;
+                        } else {
+                            htmlGiocatori += `
+                                <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700/60 hover:bg-slate-100 dark:hover:bg-slate-700 p-1.5 rounded border border-slate-200 dark:border-slate-600 text-xs transition shadow-2xs" title="${p.name} (${p.team}) - ${p.price} cr">
+                                    <div class="truncate pr-1 flex items-center gap-1.5">
+                                        <span class="font-bold text-slate-800 dark:text-slate-100 truncate">${p.name}</span>
+                                        <span class="text-[9px] text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 px-1 py-0.2 rounded shrink-0 font-mono uppercase">${p.team.substring(0, 3)}</span>
+                                    </div>
+                                    <span class="font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.2 rounded text-[11px] shrink-0">${p.price} cr</span>
+                                </div>`;
+                        }
                     });
+
                     const vuoti = MAX_SLOTS[ruolo] - giocNelRuolo.length;
-                    for (let i = 0; i < vuoti; i++) { htmlGiocatori += `<div class="p-1.5 rounded border border-dashed border-slate-200 text-slate-300 text-[11px] italic text-center bg-slate-50/30">Slot Vuoto</div>`; }
-                    const colGrid = (ruolo === 'D' || ruolo === 'C' || ruolo === 'A') ? 'grid grid-cols-2 gap-1.5' : 'space-y-1.5';
+                    const emptyStyle = isMultiCol ? 'min-h-[46px] flex items-center justify-center' : 'p-1.5';
+                    for (let i = 0; i < vuoti; i++) {
+                        htmlGiocatori += `<div class="${emptyStyle} rounded border border-dashed border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 text-[11px] italic text-center bg-slate-50/30 dark:bg-slate-800/40">Slot Vuoto</div>`;
+                    }
+                    const colGrid = isMultiCol ? 'grid grid-cols-2 gap-1.5' : 'space-y-1.5';
                     container.innerHTML += `
-                        <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-200 shadow-2xs">
-                            <h4 class="font-extrabold text-xs text-${colori[ruolo]}-700 uppercase border-b border-slate-200 pb-1 mb-2 flex justify-between items-center">
-                                <span>${nomiRuoli[ruolo]}</span><span class="bg-${colori[ruolo]}-100 px-1.5 py-0.2 rounded text-[10px]">${giocNelRuolo.length}/${MAX_SLOTS[ruolo]}</span>
+                        <div class="bg-slate-50/50 dark:bg-slate-700/30 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                            <h4 class="font-extrabold text-xs text-${colori[ruolo]}-700 dark:text-${colori[ruolo]}-400 uppercase border-b border-slate-200 dark:border-slate-700 pb-1 mb-2 flex justify-between items-center">
+                                <span>${nomiRuoli[ruolo]}</span><span class="bg-${colori[ruolo]}-100 dark:bg-${colori[ruolo]}-900/60 px-1.5 py-0.2 rounded text-[10px]">${giocNelRuolo.length}/${MAX_SLOTS[ruolo]}</span>
                             </h4>
                             <div class="${colGrid}">${htmlGiocatori}</div>
                         </div>`;
                 });
             } else if (modeVistaRosa === 'RUOLO') {
                 const ruolo = ruoloSelezionatoVista; const maxSlot = MAX_SLOTS[ruolo];
-                const grigliaInterna = (ruolo === 'D' || ruolo === 'C' || ruolo === 'A') ? 'grid grid-cols-2 gap-1.5' : 'space-y-1.5';
+                const isMultiCol = (ruolo === 'D' || ruolo === 'C' || ruolo === 'A');
+                const grigliaInterna = isMultiCol ? 'grid grid-cols-2 gap-1' : 'space-y-1';
+
                 teams.forEach(team => {
                     const stats = calcolaStatisticheSquadra(team);
                     const giocNelRuolo = (team.players || []).filter(p => p.role === ruolo);
                     let htmlGiocatori = '';
+
                     giocNelRuolo.forEach(p => {
+                        // MICRO-CHIP A 1 RIGA ULTRA-COMPATTO CON PROTEZIONE ANTI-SOVRAPPOSIZIONE
                         htmlGiocatori += `
-                            <div class="flex justify-between items-center bg-white px-2 py-1 rounded border border-slate-200 text-[11px] shadow-2xs">
-                                <div class="truncate pr-1"><span class="font-bold text-slate-800 truncate">${p.name}</span><span class="text-[8px] text-slate-400 font-mono ml-0.5">(${p.team.substring(0, 3).toUpperCase()})</span></div>
-                                <span class="font-black text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded text-[10px] shrink-0">${p.price}</span>
+                            <div class="flex justify-between items-center bg-white dark:bg-slate-700 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-600 text-[11px] shadow-2xs leading-tight min-h-[24px]" title="${p.name} (${p.team}) - ${p.price} cr">
+                                <div class="flex items-center gap-1 truncate pr-1">
+                                    <span class="font-bold text-slate-800 dark:text-slate-100 truncate">${p.name}</span>
+                                    <span class="text-[8px] text-slate-400 dark:text-slate-300 font-mono bg-slate-100 dark:bg-slate-600 px-1 py-0.2 rounded uppercase shrink-0">${p.team.substring(0, 3)}</span>
+                                </div>
+                                <span class="font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-1 rounded shrink-0 text-[10px]">${p.price}</span>
                             </div>`;
                     });
+
                     const vuoti = maxSlot - giocNelRuolo.length;
-                    for (let i = 0; i < vuoti; i++) { htmlGiocatori += `<div class="px-2 py-1 rounded border border-dashed border-slate-200 text-slate-300 text-[10px] italic text-center bg-white/40">Vuoto</div>`; }
+                    const emptyStyle = isMultiCol ? 'min-h-[24px] flex items-center justify-center' : 'py-0.5 px-1.5';
+                    for (let i = 0; i < vuoti; i++) {
+                        htmlGiocatori += `<div class="${emptyStyle} rounded border border-dashed border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 text-[10px] italic text-center bg-white/40 dark:bg-slate-800/40">Vuoto</div>`;
+                    }
                     const isCompleto = (giocNelRuolo.length === maxSlot);
                     container.innerHTML += `
-                        <div class="p-2.5 rounded-xl border ${isCompleto ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/70'} shadow-2xs transition flex flex-col justify-between">
-                            <div class="border-b border-slate-200 pb-1 mb-1.5 flex justify-between items-center">
+                        <div class="p-2 rounded-xl border ${isCompleto ? 'border-emerald-400 dark:border-emerald-600 bg-emerald-50/30 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-700/30'} shadow-2xs transition flex flex-col justify-between">
+                            <div class="border-b border-slate-200 dark:border-slate-700 pb-1 mb-1 flex justify-between items-center">
                                 <div class="truncate pr-1">
-                                    <h4 class="font-black text-xs text-slate-800 truncate">${team.name}</h4>
-                                    <div class="text-[9px] text-slate-500 flex space-x-2"><span>Max: <strong class="text-indigo-600 font-bold">${stats.maxOfferta}</strong></span><span>Res: <strong class="text-emerald-600">${stats.residui}</strong></span></div>
+                                    <h4 class="font-black text-xs text-slate-800 dark:text-slate-100 truncate">${team.name}</h4>
+                                    <div class="text-[9px] text-slate-500 dark:text-slate-400 flex space-x-2"><span>Max: <strong class="text-indigo-600 dark:text-indigo-400 font-bold">${stats.maxOfferta}</strong></span><span>Res: <strong class="text-emerald-600 dark:text-emerald-400">${stats.residui}</strong></span></div>
                                 </div>
-                                <span class="bg-${colori[ruolo]}-100 text-${colori[ruolo]}-800 font-bold px-1.5 py-0.2 rounded text-[10px] shrink-0">${giocNelRuolo.length}/${maxSlot}</span>
+                                <span class="bg-${colori[ruolo]}-100 dark:bg-${colori[ruolo]}-900/60 text-${colori[ruolo]}-800 dark:text-${colori[ruolo]}-300 font-bold px-1.5 py-0.2 rounded text-[10px] shrink-0">${giocNelRuolo.length}/${maxSlot}</span>
                             </div>
                             <div class="${grigliaInterna}">${htmlGiocatori}</div>
                         </div>`;
@@ -847,29 +1198,41 @@
             historyLog.forEach((item, index) => {
                 const team = teams.find(t => t.id === item.teamId); const player = players.find(p => p.id === item.playerId);
                 if (!team || !player) return;
-                let badgeColor = "bg-slate-200 text-slate-800";
-                if (player.role === 'P') badgeColor = "bg-yellow-100 text-yellow-800";
-                if (player.role === 'D') badgeColor = "bg-green-100 text-green-800";
-                if (player.role === 'C') badgeColor = "bg-blue-100 text-blue-800";
-                if (player.role === 'A') badgeColor = "bg-red-100 text-red-800";
+                let badgeColor = "bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200";
+                if (player.role === 'P') badgeColor = "bg-yellow-100 dark:bg-yellow-900/60 text-yellow-800 dark:text-yellow-300";
+                if (player.role === 'D') badgeColor = "bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300";
+                if (player.role === 'C') badgeColor = "bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300";
+                if (player.role === 'A') badgeColor = "bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-300";
 
                 list.innerHTML += `
-                    <div class="flex justify-between items-center bg-white p-1.5 rounded-lg border border-slate-200 text-[11px] shadow-2xs hover:border-slate-300 transition">
+                    <div class="flex justify-between items-center bg-white dark:bg-slate-700 p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-[11px] shadow-2xs hover:border-slate-300 transition">
                         <div class="flex items-center space-x-1 truncate">
                             <span class="text-[9px] font-mono text-slate-400 font-bold">#${index + 1}</span>
                             <span class="font-bold px-1 py-0.2 rounded ${badgeColor} text-[9px]">${player.role}</span>
-                            <span class="font-bold text-slate-800">${player.name}</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100">${player.name}</span>
                             <span class="text-slate-400 text-[9px]">(${player.team.substring(0, 3)})</span>
-                            <span class="mx-0.5 text-slate-300">➔</span>
-                            <span class="font-extrabold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded text-[10px] truncate max-w-[80px]">${team.name}</span>
+                            <svg class="w-3 h-3 text-slate-400 mx-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            <span class="font-extrabold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.2 rounded text-[10px] truncate max-w-[80px]">${team.name}</span>
                         </div>
                         <div class="flex items-center space-x-2 shrink-0 ml-1">
-                            <span class="font-black text-emerald-600 text-xs">${item.price} cr</span>
-                            <button type="button" onclick="annullaAcquisto(${item.playerId})" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-1.5 py-0.5 rounded text-[9px] border border-rose-200 transition" title="Annulla">🗑️</button>
+                            <span class="font-black text-emerald-600 dark:text-emerald-400 text-xs">${item.price} cr</span>
+                            <button type="button" onclick="annullaAcquisto(${item.playerId})" class="bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-600 dark:text-rose-400 p-1 rounded border border-rose-200 dark:border-rose-800 transition" title="Annulla acquisto">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
                         </div>
                     </div>`;
             });
             if (!skipScroll) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
+        }
+
+        // --- GESTIONE PREZZO RAPIDO (+1, -1, +5, -5) ---
+        function modificaPrezzo(delta) {
+            const input = document.getElementById('input-price');
+            let val = parseInt(input.value);
+            if (isNaN(val)) val = 0;
+            val += delta;
+            if (val < 1) val = 1;
+            input.value = val;
         }
 
         // --- GESTIONE SELEZIONI ---
@@ -888,8 +1251,8 @@
 
         function assegnaGiocatore(e) {
             e.preventDefault();
-            if (!giocatoreSelezionatoPerAsta) { alert("⚠️ Seleziona prima un giocatore cliccando sulla lista Svincolati!"); return; }
-            if (squadraSelezionataPerAsta === null || squadraSelezionataPerAsta === undefined) { alert("⚠️ Seleziona la squadra acquirente cliccando sul suo riquadro!"); return; }
+            if (!giocatoreSelezionatoPerAsta) { alert("Seleziona prima un giocatore cliccando sulla lista Svincolati!"); return; }
+            if (squadraSelezionataPerAsta === null || squadraSelezionataPerAsta === undefined) { alert("Seleziona la squadra acquirente cliccando sul suo riquadro!"); return; }
 
             const playerId = giocatoreSelezionatoPerAsta; const teamId = squadraSelezionataPerAsta;
             const price = parseInt(document.getElementById('input-price').value);
@@ -897,7 +1260,7 @@
             const player = players.find(p => p.id === playerId); const team = teams.find(t => t.id === teamId);
             const stats = calcolaStatisticheSquadra(team);
             if (price > stats.maxOfferta && (team.players || []).length < 24) {
-                if (!confirm(`⚠️ ATTENZIONE! ${team.name} offre ${price} crediti ma la sua offerta massima consigliata è ${stats.maxOfferta}. Rischia di rimanere bloccato! Vuoi procedere comunque?`)) { return; }
+                if (!confirm(`ATTENZIONE! "${team.name}" offre ${price} crediti ma la sua offerta massima consigliata è ${stats.maxOfferta}. Rischia di rimanere bloccato! Vuoi procedere comunque?`)) { return; }
             }
             if (stats.slotOccupati[player.role] >= MAX_SLOTS[player.role]) { alert(`Errore: Il reparto [${player.role}] della squadra "${team.name}" è già completo!`); return; }
 
@@ -929,7 +1292,7 @@
         function esportaRoseCSV() {
             let totaleGiocatori = teams.reduce((acc, t) => acc + (t.players ? t.players.length : 0), 0);
             if (totaleGiocatori === 0) {
-                alert("⚠️ Nessun giocatore assegnato! Completa prima qualche acquisto per poter esportare il file.");
+                alert("Nessun giocatore assegnato! Completa prima qualche acquisto per poter esportare il file.");
                 return;
             }
 
@@ -938,13 +1301,11 @@
             teams.forEach(team => {
                 const rosa = team.players || [];
                 rosa.forEach(p => {
-                    // Puliamo il nome squadra da eventuali virgole per non creare colonne fantasma nel CSV
                     const nomeSquadraPulito = team.name.replace(/,/g, "");
                     csvContent += `${nomeSquadraPulito},${p.id},${p.price}\r\n`;
                 });
             });
 
-            // Avvio del download automatico
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -955,7 +1316,8 @@
             document.body.removeChild(link);
         }
 
-        // --- AVVIO APP E CONNESSIONE CLOUD ---
+        // --- AVVIO APP, TEMA NOTTURNO E CONNESSIONE CLOUD ---
+        initDarkMode();
         controllaMemoria();
         inizializzaCloud();
     </script>
