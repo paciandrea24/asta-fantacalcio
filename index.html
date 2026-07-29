@@ -192,6 +192,17 @@
                         </svg>
                     </button>
 
+                    <!-- NUOVO TASTO GRIGLIA PORTIERI -->
+                    <button type="button" onclick="apriModaleGriglia()"
+                        class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5 shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                            </path>
+                        </svg>
+                        <span>Griglia Portieri</span>
+                    </button>
+
                     <button type="button" onclick="esportaRoseCSV()"
                         class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5 shadow-2xs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,8 +534,9 @@
                                 <span class="flex items-center gap-1.5">
                                     <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
+                                        <!-- SVG CORRETTO QUI SOTTO -->
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1.01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                                         </path>
                                     </svg>
                                     <span>Riepilogo Compatto Lega</span>
@@ -563,24 +575,54 @@
 
     </div>
 
+    <!-- ========================================== -->
+    <!-- MODALE GRIGLIA PORTIERI (DATI INTEGRATI) -->
+    <!-- ========================================== -->
+    <div id="modal-griglia" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div
+                class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h2 class="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z">
+                        </path>
+                    </svg>
+                    Migliori Incroci Portieri 2026-27
+                </h2>
+                <button onclick="chiudiModaleGriglia()"
+                    class="text-slate-500 hover:text-rose-500 font-bold text-2xl transition">&times;</button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1 space-y-4">
+                <div
+                    class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl text-sm text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-800 shadow-sm leading-relaxed">
+                    <strong class="block mb-1">💡 Come si legge la griglia?</strong>
+                    I dati sono già precaricati e mostrano quante volte nella stagione le due squadre giocano
+                    contemporaneamente in trasferta (o in casa).
+                    <br><strong>Più l'indice è vicino a 0, migliore è l'alternanza!</strong> Un indice 0 significa
+                    perfetta alternanza Casa/Trasferta in tutte le giornate.
+                </div>
+
+                <div id="griglia-results" class="space-y-3 pt-2">
+                    <h3
+                        class="font-extrabold text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-700 pb-2 flex justify-between items-center">
+                        Migliori Combinazioni
+                        <span class="text-xs font-normal text-slate-500">(Indice da 0 a 8)</span>
+                    </h3>
+                    <div id="griglia-best-pairs" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        <!-- Generato via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARICA LE CONFIGURAZIONI ESTERNE (Deve stare fuori dall'altro blocco script!) -->
+    <script src="config.js"></script>
+
     <!-- LOGICA JAVASCRIPT -->
     <script>
-        // =================================================================
-        // 👉👈 ATTENZIONE! SOSTITUISCI QUESTO BLOCCO CON LE TUE CHIAVI FIREBASE!
-        // =================================================================
-        const FIREBASE_CONFIG = {
-            apiKey: "AIzaSyDVLd3Io22xPV9I_T8nng-wC4E8RgLJXgE",
-            authDomain: "asta-fantacalcio-6ee2b.firebaseapp.com",
-            databaseURL: "https://asta-fantacalcio-6ee2b-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "asta-fantacalcio-6ee2b",
-            storageBucket: "asta-fantacalcio-6ee2b.firebasestorage.app",
-            messagingSenderId: "267150146713",
-            appId: "1:267150146713:web:1bea11a1767495af2c0c08",
-            measurementId: "G-EBVGG4L18Y"
-
-        };
-        // =================================================================
-
         // --- 1. CONFIGURAZIONE E VARIABILI GLOBALI ---
         let BUDGET_INIZIALE = 500;
         const MAX_SLOTS = { P: 3, D: 8, C: 8, A: 6 };
@@ -607,6 +649,76 @@
             { id: 14, name: "VLAHOVIC", role: "A", team: "Juventus", status: "free", fvm: 150, qta: 31 }
         ];
         let historyLog = [];
+
+        // --- GESTIONE MODALE GRIGLIA PORTIERI (DATI INTEGRATI) ---
+        const DATI_GRIGLIA_PORTIERI = [
+            { "name": "Int - Mil", "val": 0 }, { "name": "Juv - Tor", "val": 0 }, { "name": "Laz - Rom", "val": 0 },
+            { "name": "Nap - Rom", "val": 3 }, { "name": "Int - Sas", "val": 4 }, { "name": "Lec - Par", "val": 4 },
+            { "name": "Par - Sas", "val": 4 }, { "name": "Ata - Fro", "val": 5 }, { "name": "Gen - Juv", "val": 5 },
+            { "name": "Ata - Bol", "val": 6 }, { "name": "Ata - Cag", "val": 6 }, { "name": "Bol - Lec", "val": 6 },
+            { "name": "Bol - Nap", "val": 6 }, { "name": "Bol - Sas", "val": 6 }, { "name": "Cag - Fio", "val": 6 },
+            { "name": "Cag - Ven", "val": 6 }, { "name": "Com - Fio", "val": 6 }, { "name": "Com - Fro", "val": 6 },
+            { "name": "Fio - Laz", "val": 6 }, { "name": "Fio - Lec", "val": 6 }, { "name": "Fro - Nap", "val": 6 },
+            { "name": "Fro - Sas", "val": 6 }, { "name": "Juv - Rom", "val": 6 }, { "name": "Laz - Tor", "val": 6 },
+            { "name": "Lec - Mon", "val": 6 }, { "name": "Lec - Rom", "val": 6 }, { "name": "Mil - Par", "val": 6 },
+            { "name": "Mon - Ven", "val": 6 }, { "name": "Ata - Mon", "val": 7 }, { "name": "Ata - Par", "val": 7 },
+            { "name": "Ata - Rom", "val": 7 }, { "name": "Bol - Gen", "val": 7 }, { "name": "Bol - Laz", "val": 7 },
+            { "name": "Bol - Ven", "val": 7 }, { "name": "Cag - Mil", "val": 7 }, { "name": "Com - Gen", "val": 7 },
+            { "name": "Com - Nap", "val": 7 }, { "name": "Com - Par", "val": 7 }, { "name": "Com - Ven", "val": 7 },
+            { "name": "Fio - Nap", "val": 7 }, { "name": "Fio - Sas", "val": 7 }, { "name": "Fro - Laz", "val": 7 },
+            { "name": "Fro - Lec", "val": 7 }, { "name": "Fro - Mon", "val": 7 }, { "name": "Gen - Mil", "val": 7 },
+            { "name": "Gen - Mon", "val": 7 }, { "name": "Gen - Sas", "val": 7 }, { "name": "Gen - Udi", "val": 7 },
+            { "name": "Int - Juv", "val": 7 }, { "name": "Int - Laz", "val": 7 }, { "name": "Int - Mon", "val": 7 },
+            { "name": "Laz - Mon", "val": 7 }, { "name": "Laz - Par", "val": 7 }, { "name": "Lec - Tor", "val": 7 },
+            { "name": "Lec - Udi", "val": 7 }, { "name": "Mil - Rom", "val": 7 }, { "name": "Mil - Tor", "val": 7 },
+            { "name": "Mil - Udi", "val": 7 }, { "name": "Nap - Tor", "val": 7 }, { "name": "Nap - Ven", "val": 7 },
+            { "name": "Rom - Sas", "val": 7 }, { "name": "Sas - Udi", "val": 7 }, { "name": "Udi - Ven", "val": 7 },
+            { "name": "Ata - Fio", "val": 8 }, { "name": "Ata - Gen", "val": 8 }, { "name": "Ata - Int", "val": 8 },
+            { "name": "Bol - Tor", "val": 8 }, { "name": "Cag - Fro", "val": 8 }, { "name": "Cag - Juv", "val": 8 },
+            { "name": "Cag - Rom", "val": 8 }, { "name": "Cag - Sas", "val": 8 }, { "name": "Com - Juv", "val": 8 },
+            { "name": "Com - Udi", "val": 8 }, { "name": "Fio - Gen", "val": 8 }, { "name": "Fio - Tor", "val": 8 },
+            { "name": "Gen - Lec", "val": 8 }, { "name": "Int - Lec", "val": 8 }, { "name": "Int - Ven", "val": 8 },
+            { "name": "Juv - Ven", "val": 8 }, { "name": "Laz - Udi", "val": 8 }, { "name": "Laz - Ven", "val": 8 },
+            { "name": "Nap - Par", "val": 8 }, { "name": "Nap - Udi", "val": 8 }
+        ];
+
+        function apriModaleGriglia() {
+            document.getElementById('modal-griglia').classList.remove('hidden');
+            renderDatiGriglia();
+        }
+
+        function chiudiModaleGriglia() {
+            document.getElementById('modal-griglia').classList.add('hidden');
+        }
+
+        function renderDatiGriglia() {
+            const container = document.getElementById('griglia-best-pairs');
+            // Evita di renderizzare i blocchi più volte se sono già presenti
+            if (container.children.length > 0) return;
+
+            DATI_GRIGLIA_PORTIERI.forEach(p => {
+                let bgCard = ''; let badgeColor = '';
+                if (p.val <= 2) {
+                    bgCard = 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-100';
+                    badgeColor = 'bg-emerald-500 text-white';
+                } else if (p.val <= 5) {
+                    bgCard = 'bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-900 dark:text-green-100';
+                    badgeColor = 'bg-green-500 text-white';
+                } else {
+                    bgCard = 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100';
+                    badgeColor = 'bg-blue-500 text-white';
+                }
+
+                container.innerHTML += `
+                    <div class="flex justify-between items-center p-2.5 rounded-xl border shadow-sm ${bgCard} text-xs font-bold transition hover:scale-[1.02]">
+                        <span class="truncate pr-2">${p.name}</span>
+                        <span class="${badgeColor} px-2 py-1 rounded-lg shadow-inner shrink-0 leading-none">Indice: ${p.val}</span>
+                    </div>
+                `;
+            });
+        }
+
+
 
         // --- GESTIONE TEMA NOTTURNO (DARK MODE) ---
         function initDarkMode() {
@@ -658,6 +770,12 @@
         let stoRicevendoDalCloud = false;
 
         function inizializzaCloud() {
+            // Controllo anti-crash se il file config.js non viene caricato per qualsiasi motivo
+            if (typeof FIREBASE_CONFIG === 'undefined') {
+                console.warn("File config.js non trovato o bloccato dal browser. Firebase non verrà caricato, ma il tool funzionerà perfettamente in locale.");
+                return;
+            }
+
             if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "INCOLLA_QUI_LA_TUA_API_KEY") {
                 try {
                     firebase.initializeApp(FIREBASE_CONFIG);
@@ -691,7 +809,7 @@
                     });
                 } catch (err) {
                     console.error("Errore inizializzazione Cloud:", err);
-                    alert("Attenzione: Impossibile connettersi al Cloud. Verifica di aver incollato correttamente le chiavi Firebase.");
+                    alert("Attenzione: Impossibile connettersi al Cloud. Verifica di aver incollato correttamente le chiavi Firebase nel file config.js.");
                 }
             }
         }
@@ -1100,6 +1218,41 @@
                     document.getElementById('bar-C').style.width = `${percC}%`;
                     document.getElementById('bar-A').style.width = `${percA}%`;
                 }
+
+                // ========================================================
+                // NUOVA FUNZIONE: RIEPILOGO SQUADRE REALI (BLOCCHI)
+                // ========================================================
+                const blocchiSquadre = {};
+                (team.players || []).forEach(p => {
+                    if (p.team && p.team !== "Svincolato") {
+                        blocchiSquadre[p.team] = (blocchiSquadre[p.team] || 0) + 1;
+                    }
+                });
+
+                // Ordina per quantità decrescente
+                const blocchiArray = Object.entries(blocchiSquadre).sort((a, b) => b[1] - a[1]);
+                let htmlBlocchi = '';
+
+                if (blocchiArray.length > 0) {
+                    blocchiArray.forEach(b => {
+                        let badgeClass = b[1] >= 3 ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300 border-rose-300 dark:border-rose-700' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600';
+                        htmlBlocchi += `<span class="px-2 py-1 text-[11px] font-bold rounded-lg border shadow-xs ${badgeClass}">${b[0]}: ${b[1]}</span>`;
+                    });
+                } else {
+                    htmlBlocchi = `<span class="text-xs text-slate-400 italic">Nessun giocatore in rosa</span>`;
+                }
+
+                // Inseriamo il box dei blocchi reali prima della griglia dei giocatori
+                container.innerHTML += `
+                    <div class="col-span-1 sm:col-span-2 lg:col-span-4 mb-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h4 class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase mb-2 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            Riepilogo Blocchi (Giocatori per Squadra Reale)
+                        </h4>
+                        <div class="flex flex-wrap gap-2">${htmlBlocchi}</div>
+                    </div>`;
+                // ========================================================
+
 
                 ['P', 'D', 'C', 'A'].forEach(ruolo => {
                     const giocNelRuolo = (team.players || []).filter(p => p.role === ruolo);
