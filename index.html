@@ -18,6 +18,9 @@
     <!-- Librerie Firebase Cloud (v10 compatibili) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <style>
         input[type="number"]::-webkit-inner-spin-button,
         input[type="number"]::-webkit-outer-spin-button {
@@ -779,37 +782,50 @@
             if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "INCOLLA_QUI_LA_TUA_API_KEY") {
                 try {
                     firebase.initializeApp(FIREBASE_CONFIG);
-                    const db = firebase.database();
-                    dbRef = db.ref('asta_live_2026');
-                    firebaseConnesso = true;
 
-                    const badge = document.getElementById('cloud-status-badge');
-                    badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5"></span><span>Cloud Connesso</span>';
-                    badge.className = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center shadow-2xs';
+                    // 1. FA IL LOGIN ANONIMO
+                    firebase.auth().signInAnonymously()
+                        .then(() => {
+                            console.log("Login anonimo OK! Firebase ora ci lascia passare.");
 
-                    dbRef.on('value', (snapshot) => {
-                        const data = snapshot.val();
-                        if (data && data.teams) {
-                            stoRicevendoDalCloud = true;
-                            const puliti = sanitizzaDati(data.teams, data.players, data.historyLog);
-                            teams = puliti.teams;
-                            players = puliti.players;
-                            historyLog = puliti.historyLog;
-                            if (data.budget) BUDGET_INIZIALE = data.budget;
+                            // 2. SOLO DOPO IL LOGIN, SI CONNETTE AL DATABASE
+                            const db = firebase.database();
+                            dbRef = db.ref('asta_live_2026');
+                            firebaseConnesso = true;
 
-                            popolaFiltroSerieA();
+                            const badge = document.getElementById('cloud-status-badge');
+                            badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block mr-1.5"></span><span>Cloud Connesso</span>';
+                            badge.className = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center shadow-2xs';
 
-                            if (!astaIniziata && document.getElementById('setup-screen')) {
-                                document.getElementById('cloud-alert').classList.remove('hidden');
-                            } else if (astaIniziata) {
-                                renderTutto();
-                            }
-                            stoRicevendoDalCloud = false;
-                        }
-                    });
+                            dbRef.on('value', (snapshot) => {
+                                const data = snapshot.val();
+                                if (data && data.teams) {
+                                    stoRicevendoDalCloud = true;
+                                    const puliti = sanitizzaDati(data.teams, data.players, data.historyLog);
+                                    teams = puliti.teams;
+                                    players = puliti.players;
+                                    historyLog = puliti.historyLog;
+                                    if (data.budget) BUDGET_INIZIALE = data.budget;
+
+                                    popolaFiltroSerieA();
+
+                                    if (!astaIniziata && document.getElementById('setup-screen')) {
+                                        document.getElementById('cloud-alert').classList.remove('hidden');
+                                    } else if (astaIniziata) {
+                                        renderTutto();
+                                    }
+                                    stoRicevendoDalCloud = false;
+                                }
+                            });
+                        })
+                        .catch((error) => {
+                            console.error("Errore Autenticazione Anonima:", error);
+                            alert("Errore Auth: Ricordati di abilitare l'accesso Anonimo nella console di Firebase!");
+                        });
+
                 } catch (err) {
                     console.error("Errore inizializzazione Cloud:", err);
-                    alert("Attenzione: Impossibile connettersi al Cloud. Verifica di aver incollato correttamente le chiavi Firebase nel file config.js.");
+                    alert("Attenzione: Impossibile connettersi al Cloud. Verifica le chiavi Firebase.");
                 }
             }
         }
