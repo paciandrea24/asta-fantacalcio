@@ -570,7 +570,71 @@
             }).join('');
         }
 
-        function renderOperazioni() { }
+        // --- CONFERMA, CRONOLOGIA E ANNULLO ---
+        function confermaOperazione() {
+            var g = players.find(function (p) { return p.id === giocatoreSelezionato; });
+            var t = teams.find(function (x) { return x.id === squadraAcquirente; });
+            if (!g || !t) { alert('Scegli il giocatore e la squadra acquirente.'); return; }
+
+            var esito = RiparazioneCore.applicaOperazione(statoCorrente(), {
+                playerId: g.id,
+                teamId: t.id,
+                price: prezzoCorrente(),
+                svincolatoId: svincolatoScelto,
+                ts: Date.now()
+            });
+            if (!esito.ok) { alert(esito.errore); return; }
+
+            applicaStato(esito.stato);
+            giocatoreSelezionato = null;
+            squadraAcquirente = null;
+            svincolatoScelto = null;
+            ricerca = '';
+            var campoRicerca = document.getElementById('input-ricerca');
+            if (campoRicerca) campoRicerca.value = '';
+            salvaStato();
+            renderTutto();
+        }
+
+        function renderOperazioni() {
+            var box = document.getElementById('lista-operazioni');
+            if (!box) return;
+            var voci = historyLog.filter(function (v) { return v.tipo === 'riparazione'; });
+            if (voci.length === 0) {
+                box.innerHTML = '<p class="text-[11px] text-slate-400 italic text-center py-3">Nessuna operazione registrata</p>';
+                return;
+            }
+            box.innerHTML = voci.slice().reverse().map(function (v) {
+                var t = teams.find(function (x) { return x.id === v.teamId; });
+                var comprato = players.find(function (p) { return p.id === v.playerId; });
+                var liberato = (v.svincolatoId === null || v.svincolatoId === undefined)
+                    ? null
+                    : players.find(function (p) { return p.id === v.svincolatoId; });
+                if (!t || !comprato) return '';
+                return '<div class="flex justify-between items-center bg-white dark:bg-slate-700 p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-[11px]">' +
+                    '<div class="truncate pr-2">' +
+                    '<span class="font-extrabold text-indigo-700 dark:text-indigo-300">' + t.name + '</span> ' +
+                    badgeRuolo(comprato.role) + ' <span class="font-bold">' + comprato.name + '</span> ' +
+                    '<span class="font-black text-rose-600 dark:text-rose-400">-' + v.price + '</span>' +
+                    (liberato ? ' &nbsp;&rarr;&nbsp; svincola <span class="font-bold">' + liberato.name + '</span> <span class="font-black text-emerald-600 dark:text-emerald-400">+' + v.rimborso + '</span>' : ' <span class="text-slate-400">(nessuno svincolo)</span>') +
+                    '</div>' +
+                    '<button type="button" onclick="annullaOperazioneRiparazione(' + v.ts + ',' + v.playerId + ')" ' +
+                    'class="bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 px-2 py-1 rounded border border-rose-200 dark:border-rose-800 font-bold shrink-0">Annulla</button>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function annullaOperazioneRiparazione(ts, playerId) {
+            var voce = historyLog.find(function (v) { return v.ts === ts && v.playerId === playerId; });
+            if (!voce) { alert('Operazione non trovata.'); return; }
+            if (!confirm('Annullare questa operazione? Il giocatore comprato torna svincolato e quello liberato rientra in rosa con il suo prezzo.')) return;
+
+            var esito = RiparazioneCore.annullaOperazione(statoCorrente(), voce);
+            if (!esito.ok) { alert(esito.errore); return; }
+            applicaStato(esito.stato);
+            salvaStato();
+            renderTutto();
+        }
 
         function renderTutto() {
             renderTestata();
