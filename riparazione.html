@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asta di Riparazione - Fantacalcio</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <style>
+        /* Palette chiara completa: i blocchi tema piu sotto ridefiniscono solo i token. */
+        :root {
+            --ground: #ecefec;
+            --surface: #ffffff;
+            --sunken: #e3e7e4;
+            --line: #cfd6d2;
+            --line-soft: #e0e5e2;
+            --ink: #141b19;
+            --ink-2: #4a5551;
+            --ink-3: #7c8783;
+            --accent: #8f4b06;
+            --accent-w: #fdf3e6;
+            --yes: #10673a;
+            --yes-w: #e4f2ea;
+            --no: #97231c;
+            --no-w: #f8e8e6;
+            --warn: #8a5a00;
+            --warn-w: #fdf1d8;
+            --pick: #17352c;
+            --on-pick: #ecefec;
+            --radius: 4px;
+            --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+            --sans: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --ground: #121614; --surface: #1b211e; --sunken: #161b19;
+                --line: #333d38; --line-soft: #262e2a;
+                --ink: #e8edea; --ink-2: #a3aeaa; --ink-3: #75817c;
+                --accent: #e2a05c; --accent-w: #2e2115;
+                --yes: #5dc98d; --yes-w: #14291f;
+                --no: #f0867c; --no-w: #2c1815;
+                --warn: #dcb163; --warn-w: #2b2312;
+                --pick: #d6efe4; --on-pick: #121614;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --ground: #121614; --surface: #1b211e; --sunken: #161b19;
+            --line: #333d38; --line-soft: #262e2a;
+            --ink: #e8edea; --ink-2: #a3aeaa; --ink-3: #75817c;
+            --accent: #e2a05c; --accent-w: #2e2115;
+            --yes: #5dc98d; --yes-w: #14291f;
+            --no: #f0867c; --no-w: #2c1815;
+            --warn: #dcb163; --warn-w: #2b2312;
+            --pick: #d6efe4; --on-pick: #121614;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0; background: var(--ground); color: var(--ink);
+            font-family: var(--sans); font-size: 14px; line-height: 1.45;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button, select, input { font: inherit; color: inherit; }
+        button { cursor: pointer; }
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+        .wrap { max-width: 1400px; margin: 0 auto; padding: 12px 14px 28px; }
+        .hidden { display: none !important; }
+
+        /* ---------- barra comune ---------- */
+        .chrome {
+            background: var(--pick); color: var(--on-pick);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 9px 13px; display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+        }
+        .chrome .name { font-weight: 800; font-size: 15px; letter-spacing: -.01em; }
+        .chrome label { font-size: 11.5px; opacity: .8; display: flex; align-items: center; gap: 6px; }
+        .chrome select {
+            background: rgba(128, 128, 128, .18); color: inherit;
+            border: 1px solid rgba(128, 128, 128, .45); border-radius: var(--radius);
+            padding: 3px 6px; font-size: 12px; font-weight: 600; max-width: 190px;
+        }
+        .chrome select option { color: #141b19; background: #fff; }
+        .chrome .right { margin-left: auto; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+        .chrome .act {
+            background: transparent; border: 1px solid rgba(128, 128, 128, .45); color: inherit;
+            padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: var(--radius);
+            text-decoration: none; display: inline-block;
+        }
+        .chrome .act:hover { border-color: currentColor; }
+        .chrome .act:disabled { opacity: .4; cursor: not-allowed; }
+
+        .fasi { display: flex; gap: 2px; }
+        .fasi button {
+            background: transparent; border: 1px solid rgba(128, 128, 128, .45); color: inherit;
+            padding: 3px 12px; font-size: 12px; font-weight: 600; border-radius: var(--radius); opacity: .7;
+        }
+        .fasi button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
+        :root[data-theme="dark"] .fasi button[aria-pressed="true"] { color: #241705; }
+
+        /* ---------- diagnostica ---------- */
+        .diag {
+            font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+            padding: 5px 13px; background: var(--sunken);
+            border: 1px solid var(--line); border-top: 0; border-bottom: 0;
+            display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+        }
+        .diag .cloud { display: inline-flex; align-items: center; gap: 5px; }
+        .diag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); }
+        .diag .dot.on { background: var(--yes); }
+        .diag .dot.off { background: var(--no); }
+        .diag .vecchio { color: var(--warn); font-weight: 600; }
+
+        /* ---------- avvisi ---------- */
+        .avviso {
+            background: var(--warn-w); border: 1px solid var(--warn); color: var(--ink);
+            border-radius: var(--radius); padding: 14px 16px; margin-top: 10px; font-size: 13.5px;
+        }
+        .avviso b { font-weight: 700; }
+        .avviso ol { margin: 8px 0 0; padding-left: 20px; }
+        .avviso li { margin-bottom: 3px; }
+
+        /* ---------- pannello ---------- */
+        .board {
+            border: 1px solid var(--line); border-top: 0;
+            border-radius: 0 0 var(--radius) var(--radius); background: var(--surface);
+        }
+        .band { border-bottom: 1px solid var(--line-soft); padding: 11px 13px; }
+        .band:last-child { border-bottom: 0; border-radius: 0 0 var(--radius) var(--radius); }
+        .band-sunk { background: var(--sunken); }
+        .lab {
+            font-size: 10px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase;
+            color: var(--ink-3); display: block; margin-bottom: 8px;
+        }
+
+        /* ---------- barra di lavoro ---------- */
+        .bbar { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; padding: 10px 13px; }
+        .bbar .sep { width: 1px; align-self: stretch; background: var(--line-soft); }
+
+        .search { flex: 1 1 210px; max-width: 300px; }
+        .search input {
+            width: 100%; padding: 8px 11px; background: var(--surface);
+            border: 1px solid var(--line); border-radius: var(--radius);
+        }
+
+        /* ---------- elenco dei chiamabili ---------- */
+        .testa-lista { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+        .testa-lista .lab { margin: 0; }
+        .ord { display: flex; gap: 3px; margin-left: auto; }
+        .ord button {
+            background: none; border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--ink-3);
+        }
+        .ord button[aria-pressed="true"] { background: var(--accent-w); border-color: var(--accent); color: var(--accent); }
+
+        .chiamabili {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+            gap: 4px; max-height: 190px; overflow-y: auto; padding-right: 3px;
+        }
+        .pl {
+            display: flex; align-items: stretch;
+            background: var(--surface); border: 1px solid var(--line-soft);
+            border-radius: var(--radius); font-size: 12px; overflow: hidden;
+        }
+        .pl:hover { border-color: var(--accent); background: var(--accent-w); }
+        .pl.on { border-color: var(--accent); border-width: 2px; background: var(--accent-w); }
+        .pl.scelto { border-color: var(--pick); border-width: 2px; background: var(--sunken); }
+        .pl .go-pl {
+            flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 7px;
+            text-align: left; background: none; border: 0; padding: 5px 8px;
+        }
+        .pl .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pl .club { color: var(--ink-3); font-size: 10.5px; white-space: nowrap; }
+        .pl .fvm {
+            margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+            font-variant-numeric: tabular-nums; flex: 0 0 auto;
+        }
+        .scheda {
+            flex: 0 0 auto; display: flex; align-items: center; padding: 0 7px;
+            border-left: 1px solid var(--line-soft); color: var(--ink-3);
+            text-decoration: none; font-size: 12px; line-height: 1;
+        }
+        .scheda:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+        :root[data-theme="dark"] .scheda:hover { color: #241705; }
+        .chosen .scheda { border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 7px; }
+        .vuota { color: var(--ink-3); font-style: italic; font-size: 12.5px; grid-column: 1 / -1; padding: 10px 0; }
+
+        .chosen { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+        .chosen .pname { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+        .chosen .meta { font-size: 11.5px; color: var(--ink-3); font-family: var(--mono); }
+        .chosen .x { background: none; border: 0; color: var(--no); font-weight: 700; font-size: 15px; padding: 0 2px; }
+        .role {
+            font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 1px 6px;
+            border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink-2);
+        }
+        .hint { color: var(--ink-3); font-size: 12.5px; font-style: italic; }
+
+        .bprice { display: flex; align-items: center; gap: 5px; margin-left: auto; }
+        .bprice button {
+            font-family: var(--mono); font-weight: 600; font-size: 13px; min-width: 38px; padding: 7px 0;
+            background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+        }
+        .bprice button:hover { background: var(--accent-w); border-color: var(--accent); }
+        .bprice .val {
+            font-family: var(--mono); font-weight: 600; font-size: 30px; letter-spacing: -.03em;
+            min-width: 78px; text-align: center; font-variant-numeric: tabular-nums;
+            border: 0; background: none; padding: 0; -moz-appearance: textfield;
+        }
+        .bprice .val::-webkit-inner-spin-button,
+        .bprice .val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .bprice .cr { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+        /* ---------- carte squadra ---------- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+        .team {
+            text-align: left; background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--radius); padding: 11px; display: flex; flex-direction: column;
+            gap: 6px; transition: border-color .12s, background .12s;
+        }
+        .team:hover { border-color: var(--ink-3); }
+        .team.out { opacity: .52; }
+        .team.sel { border-color: var(--accent); border-width: 2px; padding: 10px; background: var(--accent-w); }
+        .team.mia { box-shadow: inset 3px 0 0 var(--pick); }
+
+        .tn { font-size: 15px; font-weight: 800; letter-spacing: -.01em; display: flex; align-items: baseline; gap: 6px; }
+        .tn .txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tu {
+            font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .1em;
+            text-transform: uppercase; background: var(--pick); color: var(--on-pick);
+            padding: 1px 5px; border-radius: 2px; flex: 0 0 auto;
+        }
+        .figs { display: flex; gap: 11px; align-items: baseline; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+        .figs b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+        .pill {
+            font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: .07em;
+            text-transform: uppercase; padding: 2px 6px; border-radius: 2px; margin-left: auto;
+        }
+        .pill.y { background: var(--yes-w); color: var(--yes); }
+        .pill.n { background: var(--no-w); color: var(--no); }
+        .sv { font-size: 11px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sv b { font-weight: 600; }
+        .sv .plus { font-family: var(--mono); color: var(--yes); font-weight: 600; }
+        .sv.vuoto { color: var(--ink-3); font-style: italic; }
+
+        /* ---------- svincolo ---------- */
+        .rel { display: flex; gap: 9px; align-items: flex-start; flex-wrap: wrap; }
+        .rel-list { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 420px; }
+        .cand {
+            display: flex; align-items: baseline; gap: 8px; background: var(--surface);
+            border: 1px solid var(--line); border-radius: var(--radius); padding: 6px 9px; text-align: left;
+        }
+        .cand:hover:not(:disabled) { border-color: var(--yes); }
+        .cand.on { border-color: var(--yes); border-width: 2px; padding: 5px 8px; background: var(--yes-w); }
+        .cand:disabled { opacity: .38; cursor: not-allowed; }
+        .cand .cn { font-weight: 600; font-size: 12.5px; }
+        .cand .cf { font-family: var(--mono); font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+        .cand .plus { color: var(--yes); font-weight: 600; }
+        .cand .morto {
+            font-family: var(--mono); font-size: 9px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: .06em; background: var(--warn-w); color: var(--warn);
+            border: 1px solid var(--warn); padding: 0 4px; border-radius: 2px;
+        }
+
+        .go {
+            flex: 0 0 auto; background: var(--pick); color: var(--on-pick); border: 0;
+            border-radius: var(--radius); padding: 11px 20px; font-weight: 700; font-size: 13.5px;
+            letter-spacing: -.01em;
+        }
+        .go:disabled { background: var(--sunken); color: var(--ink-3); border: 1px solid var(--line); cursor: not-allowed; }
+        .go span { font-family: var(--mono); font-weight: 500; opacity: .82; }
+
+        /* ---------- cronologia ---------- */
+        .veil {
+            position: fixed; inset: 0; background: rgba(10, 14, 12, .55); z-index: 80;
+            display: flex; align-items: center; justify-content: center; padding: 18px;
+        }
+        .modal {
+            background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+            width: 100%; max-width: 700px; max-height: 82vh; display: flex; flex-direction: column;
+        }
+        .modal header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 11px 14px; border-bottom: 1px solid var(--line-soft);
+        }
+        .modal h2 { margin: 0; font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+        .modal .x { background: none; border: 0; font-size: 23px; line-height: 1; color: var(--ink-3); padding: 0 4px; }
+        .modal .body { overflow-y: auto; padding: 12px 14px; }
+        .modal ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+        .modal li {
+            display: flex; gap: 9px; align-items: baseline; flex-wrap: wrap;
+            border: 1px solid var(--line-soft); border-left: 3px solid var(--accent);
+            border-radius: var(--radius); padding: 7px 10px; font-size: 12.5px;
+        }
+        .modal .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+        .modal .neg { color: var(--no); font-weight: 600; }
+        .modal .pos { color: var(--yes); font-weight: 600; }
+        .modal .undo {
+            margin-left: auto; background: none; border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--no);
+        }
+        .modal .undo:hover { border-color: var(--no); }
+        .modal p { color: var(--ink-3); font-style: italic; margin: 0; font-size: 13px; }
+
+        @media (max-width: 640px) {
+            .bprice { margin-left: 0; }
+            .bprice .val { font-size: 26px; min-width: 66px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+
+        <div class="chrome">
+            <span class="name">Riparazione</span>
+            <label>la mia squadra
+                <select id="sel-mia" onchange="impostaMiaSquadra(this.value)">
+                    <option value="">— scegli —</option>
+                </select>
+            </label>
+            <div class="fasi" id="fasi"></div>
+            <div class="right">
+                <button type="button" class="act" id="btn-bonus" onclick="applicaBonusIniziale()">+50 crediti a tutti</button>
+                <button type="button" class="act" id="btn-log" onclick="apriCronologia()">Cronologia</button>
+                <button type="button" class="act" onclick="toggleTema()">Tema</button>
+                <a class="act" href="index.html">&larr; Asta principale</a>
+            </div>
+        </div>
+
+        <div class="diag" id="diag">
+            <span class="cloud"><span class="dot" id="cloud-dot"></span><span id="cloud-txt">Cloud in attesa</span></span>
+        </div>
+
+        <div class="avviso hidden" id="avviso"></div>
+
+        <div class="board" id="board">
+            <div class="bbar">
+                <div class="search">
+                    <input type="text" id="q" placeholder="Filtra per nome o squadra…" autocomplete="off">
+                </div>
+                <div class="sep"></div>
+                <div id="scelto"></div>
+                <div class="bprice">
+                    <button type="button" onclick="cambiaPrezzo(-5)">&minus;5</button>
+                    <button type="button" onclick="cambiaPrezzo(-1)">&minus;1</button>
+                    <input class="val" type="number" id="prezzo" min="1" value="1" aria-label="Prezzo">
+                    <button type="button" onclick="cambiaPrezzo(1)">+1</button>
+                    <button type="button" onclick="cambiaPrezzo(5)">+5</button>
+                    <span class="cr">cr</span>
+                </div>
+            </div>
+
+            <div class="band">
+                <div class="testa-lista">
+                    <span class="lab" id="lab-chiamabili">Chiamabili</span>
+                    <div class="ord" id="ord">
+                        <button type="button" onclick="impostaOrdine('fvm')" aria-pressed="true">FVM</button>
+                        <button type="button" onclick="impostaOrdine('qta')" aria-pressed="false">Qt.A</button>
+                        <button type="button" onclick="impostaOrdine('nome')" aria-pressed="false">Nome</button>
+                    </div>
+                </div>
+                <div class="chiamabili" id="chiamabili"></div>
+            </div>
+
+            <div class="band">
+                <span class="lab" id="lab-squadre">Chi può prenderlo</span>
+                <div class="grid" id="squadre"></div>
+            </div>
+
+            <div class="band band-sunk" id="svincolo"></div>
+        </div>
+    </div>
+
+    <div class="veil hidden" id="veil" onclick="if (event.target === this) chiudiCronologia()">
+        <div class="modal">
+            <header>
+                <h2>Operazioni dell'asta di riparazione</h2>
+                <button type="button" class="x" onclick="chiudiCronologia()" aria-label="Chiudi">&times;</button>
+            </header>
+            <div class="body"><ol id="lista-operazioni"></ol></div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="riparazione-core.js"></script>
+    <script>
+        // --- STATO DI PAGINA (stessa forma di index.html, piu il ramo riparazione) ---
+        var teams = [];
+        var players = [];
+        var historyLog = [];
+        var riparazione = { bonusApplicato: false, bonusValore: 50, miaSquadraId: null, ruoloCorrente: 'P' };
+
+        var giocatoreSelezionato = null;
+        var squadraAcquirente = null;
+        var svincolatoScelto = null;
+        var prezzo = 1;
+        var evidenza = -1;
+        var ordinamento = 'fvm';
+
+        var RUOLI = ['P', 'D', 'C', 'A'];
+        var ETICHETTA = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', A: 'Attaccanti' };
+
+        function statoCorrente() {
+            return { teams: teams, players: players, historyLog: historyLog, riparazione: riparazione };
+        }
+
+        function applicaStato(nuovo) {
+            teams = nuovo.teams || [];
+            players = nuovo.players || [];
+            historyLog = nuovo.historyLog || [];
+            riparazione = nuovo.riparazione || riparazione;
+            teams.forEach(function (t) { if (!t.players) t.players = []; });
+            RiparazioneCore.sincronizzaRose(statoCorrente());
+        }
+
+        function el(id) { return document.getElementById(id); }
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+            });
+        }
+
+        // --- TEMA (stessa chiave di index.html, cosi le due pagine restano allineate) ---
+        function initTema() {
+            var v = localStorage.getItem('fanta_dark_mode');
+            if (v === '1') document.documentElement.setAttribute('data-theme', 'dark');
+            else if (v === '0') document.documentElement.setAttribute('data-theme', 'light');
+        }
+        function toggleTema() {
+            var scuro = document.documentElement.getAttribute('data-theme') === 'dark';
+            document.documentElement.setAttribute('data-theme', scuro ? 'light' : 'dark');
+            localStorage.setItem('fanta_dark_mode', scuro ? '0' : '1');
+        }
+
+        // --- CLOUD ---
+        var dbRef = null, firebaseConnesso = false, stoRicevendoDalCloud = false;
+
+        function segnalaCloud(classe, testo) {
+            el('cloud-dot').className = 'dot ' + classe;
+            el('cloud-txt').textContent = testo;
+        }
+
+        function inizializzaCloud() {
+            if (typeof FIREBASE_CONFIG === 'undefined') { segnalaCloud('off', 'Solo locale'); caricaDaLocale(); return; }
+            try {
+                firebase.initializeApp(FIREBASE_CONFIG);
+                firebase.auth().signInAnonymously().then(function () {
+                    dbRef = firebase.database().ref('asta_live_2026');
+                    firebaseConnesso = true;
+                    segnalaCloud('on', 'Cloud connesso');
+                    dbRef.on('value', function (snapshot) {
+                        var data = snapshot.val();
+                        if (!data || !data.teams) return;
+                        stoRicevendoDalCloud = true;
+                        applicaStato({
+                            teams: data.teams, players: data.players,
+                            historyLog: data.historyLog, riparazione: data.riparazione
+                        });
+                        renderTutto();
+                        stoRicevendoDalCloud = false;
+                    });
+                }).catch(function (err) {
+                    console.error('Errore autenticazione anonima:', err);
+                    segnalaCloud('off', 'Cloud non raggiungibile');
+                    caricaDaLocale();
+                });
+            } catch (err) {
+                console.error('Errore inizializzazione cloud:', err);
+                segnalaCloud('off', 'Cloud non raggiungibile');
+                caricaDaLocale();
+            }
+        }
+
+        // Fallback locale: stesse chiavi di index.html.
+        function caricaDaLocale() {
+            var t = localStorage.getItem('fanta_teams');
+            var p = localStorage.getItem('fanta_players');
+            if (!t || !p) { renderTutto(); return; }
+            applicaStato({
+                teams: JSON.parse(t), players: JSON.parse(p),
+                historyLog: JSON.parse(localStorage.getItem('fanta_history') || '[]'),
+                riparazione: JSON.parse(localStorage.getItem('fanta_riparazione') || 'null')
+            });
+            renderTutto();
+        }
+
+        function salvaStato() {
+            localStorage.setItem('fanta_teams', JSON.stringify(teams));
+            localStorage.setItem('fanta_players', JSON.stringify(players));
+            localStorage.setItem('fanta_history', JSON.stringify(historyLog));
+            localStorage.setItem('fanta_riparazione', JSON.stringify(riparazione));
+            if (firebaseConnesso && dbRef && !stoRicevendoDalCloud) {
+                dbRef.update({
+                    teams: teams, players: players, historyLog: historyLog,
+                    riparazione: riparazione, timestamp: Date.now()
+                }).catch(function (err) { console.error('Errore invio cloud:', err); });
+            }
+        }
+
+        // --- DIAGNOSTICA DEI DATI ---
+        // Molti "fuori listone" significano quasi sempre listone vecchio.
+        function controllaDati() {
+            var svincolati = players.filter(function (p) { return p.status === 'free'; });
+            var inRosa = players.filter(function (p) { return p.status === 'sold'; });
+            var fuori = inRosa.filter(function (p) { return p.fuoriListone; }).length;
+            var ruolo = riparazione.ruoloCorrente;
+            var diRuolo = svincolati.filter(function (p) { return p.role === ruolo; }).length;
+
+            var pezzi = [
+                players.length + ' nel listone',
+                svincolati.length + ' svincolati',
+                diRuolo + ' di ruolo ' + ruolo,
+                (fuori > 15 ? '<span class="vecchio">' + fuori + ' fuori listone</span>' : fuori + ' fuori listone'),
+                teams.length + ' squadre'
+            ];
+            var diag = el('diag');
+            diag.innerHTML = '<span class="cloud"><span class="dot ' +
+                (firebaseConnesso ? 'on' : 'off') + '" id="cloud-dot"></span><span id="cloud-txt">' +
+                (firebaseConnesso ? 'Cloud connesso' : 'Solo locale') + '</span></span>' +
+                pezzi.map(function (p) { return '<span>' + p + '</span>'; }).join('');
+
+            var avviso = el('avviso');
+            if (teams.length === 0 || inRosa.length === 0) {
+                avviso.innerHTML = '<b>Mancano i dati delle rose.</b> Torna alla pagina principale e fai i tre passi in quest\'ordine:' +
+                    '<ol><li>Importa Excel (.xlsx) — il listone quotazioni <b>aggiornato a mercato chiuso</b></li>' +
+                    '<li>Importa Rose (.xlsx) — il file esportato dalla lega</li>' +
+                    '<li>Crediti — correggi i residui di ogni squadra</li></ol>' +
+                    'L\'ordine non è invertibile: importare il listone azzera le rose.';
+                avviso.classList.remove('hidden');
+                el('board').classList.add('hidden');
+                return false;
+            }
+            if (fuori > 15) {
+                avviso.innerHTML = '<b>' + fuori + ' giocatori in rosa non sono nel listone.</b> ' +
+                    'Probabilmente il listone caricato è quello di agosto: ricaricalo aggiornato dalla pagina principale e subito dopo reimporta le rose.';
+                avviso.classList.remove('hidden');
+            } else {
+                avviso.classList.add('hidden');
+            }
+            el('board').classList.remove('hidden');
+            return true;
+        }
+
+        // --- TESTATA ---
+        function renderChrome() {
+            el('fasi').innerHTML = RUOLI.map(function (r) {
+                return '<button type="button" onclick="impostaFase(\'' + r + '\')" aria-pressed="' +
+                    (riparazione.ruoloCorrente === r) + '" title="' + ETICHETTA[r] + '">' + r + '</button>';
+            }).join('');
+
+            el('sel-mia').innerHTML = '<option value="">— scegli —</option>' + teams.map(function (t) {
+                return '<option value="' + t.id + '"' + (t.id === riparazione.miaSquadraId ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+            }).join('');
+
+            var b = el('btn-bonus');
+            b.disabled = !!riparazione.bonusApplicato || teams.length === 0;
+            b.textContent = riparazione.bonusApplicato
+                ? '+' + (riparazione.bonusValore || 50) + ' già assegnati'
+                : '+' + (riparazione.bonusValore || 50) + ' crediti a tutti';
+
+            var n = historyLog.filter(function (v) { return v.tipo === 'riparazione'; }).length;
+            el('btn-log').textContent = n ? 'Cronologia (' + n + ')' : 'Cronologia';
+        }
+
+        // --- SCHEDA SU FANTACALCIO.IT ---
+        // L'URL e .../squadre/<squadra>/<nome>/<id>, ma il sito risolve sull'id:
+        // uno slug approssimativo porta comunque alla scheda giusta.
+        // Niente link per i "fuori listone" e per gli id inventati dall'import.
+        function slug(s) {
+            return String(s == null ? '' : s)
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'giocatore';
+        }
+
+        function schedaUrl(p) {
+            if (!p || p.fuoriListone || p.senzaId || !(p.id > 0)) return null;
+            return 'https://www.fantacalcio.it/serie-a/squadre/' + slug(p.team) + '/' + slug(p.name) + '/' + p.id;
+        }
+
+        function linkScheda(p) {
+            var url = schedaUrl(p);
+            if (!url) return '';
+            return '<a class="scheda" href="' + url + '" target="_blank" rel="noopener" ' +
+                'title="Scheda di ' + esc(p.name) + ' su Fantacalcio.it" ' +
+                'onclick="event.stopPropagation()">&#8599;</a>';
+        }
+
+        // --- ELENCO DEI CHIAMABILI ---
+        // Tutti gli svincolati del ruolo in corso. La casella di ricerca non apre
+        // una tendina: filtra questo elenco, cosi la lista resta una sola.
+        function chiamabili() {
+            var q = el('q').value.trim().toLowerCase();
+            var lista = players.filter(function (p) {
+                if (p.status !== 'free' || p.role !== riparazione.ruoloCorrente) return false;
+                if (!q) return true;
+                return p.name.toLowerCase().indexOf(q) !== -1 || String(p.team).toLowerCase().indexOf(q) !== -1;
+            });
+            lista.sort(function (a, b) {
+                if (ordinamento === 'qta') return (b.qta || 0) - (a.qta || 0);
+                if (ordinamento === 'nome') return String(a.name).localeCompare(String(b.name), 'it');
+                return (b.fvm || 0) - (a.fvm || 0);
+            });
+            return lista;
+        }
+
+        function renderChiamabili() {
+            var lista = chiamabili();
+            var tuttiDelRuolo = players.filter(function (p) {
+                return p.status === 'free' && p.role === riparazione.ruoloCorrente;
+            }).length;
+            var filtrato = el('q').value.trim() !== '';
+
+            el('lab-chiamabili').textContent = 'Chiamabili — ' +
+                (filtrato ? lista.length + ' di ' + tuttiDelRuolo : String(tuttiDelRuolo)) +
+                ' ' + ETICHETTA[riparazione.ruoloCorrente].toLowerCase() + ' svincolati';
+
+            ['fvm', 'qta', 'nome'].forEach(function (o, i) {
+                el('ord').children[i].setAttribute('aria-pressed', String(ordinamento === o));
+            });
+
+            if (lista.length === 0) {
+                el('chiamabili').innerHTML = '<p class="vuota">Nessun ' + riparazione.ruoloCorrente +
+                    ' svincolato' + (filtrato ? ' corrisponde al filtro.' : '.') + '</p>';
+                return;
+            }
+            el('chiamabili').innerHTML = lista.map(function (p, i) {
+                var cls = 'pl' + (p.id === giocatoreSelezionato ? ' scelto' : (i === evidenza ? ' on' : ''));
+                return '<div class="' + cls + '" data-pid="' + p.id + '">' +
+                    '<button type="button" class="go-pl" onclick="selezionaGiocatore(' + p.id + ')">' +
+                    '<span class="nm">' + esc(p.name) + '</span>' +
+                    '<span class="club">' + esc(p.team) + '</span>' +
+                    '<span class="fvm">' + (ordinamento === 'qta' ? (p.qta || '-') : (p.fvm || '-')) + '</span>' +
+                    '</button>' + linkScheda(p) + '</div>';
+            }).join('');
+        }
+
+        function impostaOrdine(o) { ordinamento = o; evidenza = -1; renderChiamabili(); }
+
+        function renderScelto() {
+            var g = players.filter(function (p) { return p.id === giocatoreSelezionato; })[0];
+            el('scelto').innerHTML = g
+                ? '<div class="chosen"><span class="role">' + g.role + '</span>' +
+                  '<span class="pname">' + esc(g.name) + '</span>' +
+                  '<span class="meta">' + esc(g.team) + ' · FVM ' + (g.fvm || '-') + '</span>' +
+                  linkScheda(g) +
+                  '<button type="button" class="x" onclick="selezionaGiocatore(null)" title="Togli dalla lavagna">&times;</button></div>'
+                : '<span class="hint">Cerca chi è in asta</span>';
+        }
+
+        // --- CARTE SQUADRA ---
+        function renderSquadre() {
+            var g = players.filter(function (p) { return p.id === giocatoreSelezionato; })[0];
+            var ruolo = g ? g.role : riparazione.ruoloCorrente;
+            el('lab-squadre').textContent = g
+                ? 'Chi può prenderlo a ' + prezzo + ' — residui / massimo su un ' + ruolo + ' / chi dovrebbe svincolare'
+                : 'Squadre — residui e massimo su un ' + ruolo;
+
+            var ordinate = teams.slice().sort(function (a, b) {
+                return (b.id === riparazione.miaSquadraId) - (a.id === riparazione.miaSquadraId);
+            });
+
+            el('squadre').innerHTML = ordinate.map(function (t) {
+                var v = RiparazioneCore.valutaOfferta(t, ruolo, prezzo);
+                var s = RiparazioneCore.statoSquadra(t);
+                var mia = t.id === riparazione.miaSquadraId;
+                var cls = 'team' + (squadraAcquirente === t.id ? ' sel' : (v.ammessa ? '' : ' out')) + (mia ? ' mia' : '');
+
+                var riga = (v.ammessa && v.suggerito)
+                    ? '<span class="sv">svincola <b>' + esc(v.suggerito.player.name) + '</b> <span class="plus">+' + v.suggerito.rimborso + '</span></span>'
+                    : (v.ammessa && !v.serveSvincolo)
+                        ? '<span class="sv">slot ' + ruolo + ' libero, nessuno svincolo</span>'
+                        : '<span class="sv vuoto">nessuno svincolo ci arriva</span>';
+
+                // Niente conteggio degli slot: le rose partono complete e ogni
+                // acquisto e compensato da uno svincolo, quindi non cambia mai.
+                return '<button type="button" class="' + cls + '" onclick="selezionaSquadra(' + t.id + ')">' +
+                    '<span class="tn"><span class="txt">' + esc(t.name) + '</span>' + (mia ? '<span class="tu">tu</span>' : '') + '</span>' +
+                    '<span class="figs"><span>res <b>' + s.residui + '</b></span><span>max <b>' + v.maxPuntata + '</b></span>' +
+                    '<span class="pill ' + (v.ammessa ? 'y' : 'n') + '">' + (v.ammessa ? 'può' : 'fuori') + '</span></span>' +
+                    riga + '</button>';
+            }).join('');
+        }
+
+        // --- SVINCOLO: di default le mie opzioni, poi quelle dell'acquirente ---
+        function renderSvincolo() {
+            var box = el('svincolo');
+            var g = players.filter(function (p) { return p.id === giocatoreSelezionato; })[0];
+            if (!g) {
+                box.innerHTML = '<span class="lab">Chi svincola</span><span class="hint">Cerca prima il giocatore in asta.</span>';
+                return;
+            }
+
+            var acquirente = squadraAcquirente !== null;
+            var quale = acquirente ? squadraAcquirente : riparazione.miaSquadraId;
+            var t = teams.filter(function (x) { return x.id === quale; })[0];
+            if (!t) {
+                box.innerHTML = '<span class="lab">Chi svincola</span><span class="hint">Scegli "la mia squadra" in alto, oppure clicca chi si è aggiudicato ' + esc(g.name) + '.</span>';
+                return;
+            }
+
+            var v = RiparazioneCore.valutaOfferta(t, g.role, prezzo);
+            if (svincolatoScelto === null || !v.candidatiValidi.some(function (c) { return c.player.id === svincolatoScelto; })) {
+                svincolatoScelto = v.suggerito ? v.suggerito.player.id : null;
+            }
+            var pronto = acquirente && v.ammessa && (svincolatoScelto !== null || !v.serveSvincolo);
+
+            var testa = acquirente
+                ? esc(t.name) + ' svincola un ' + g.role + ' — ' +
+                  (v.ammessa ? 'a ' + prezzo + ' crediti ce la fa' : 'a ' + prezzo + ' crediti non ce la fa, massimo ' + v.maxPuntata)
+                : 'Tu (' + esc(t.name) + ') per arrivare a ' + prezzo + ' — ' +
+                  (v.ammessa ? 'ti basta uno di questi, il tuo massimo è ' + v.maxPuntata
+                             : 'non ci arrivi, il tuo massimo è ' + v.maxPuntata);
+
+            var chip;
+            if (!v.serveSvincolo) {
+                chip = '<span class="hint">Slot ' + g.role + ' libero: nessuno svincolo necessario, restano ' + v.residuiSenzaSvincolo + ' crediti.</span>';
+            } else if (v.candidati.length === 0) {
+                chip = '<span class="hint">Nessun ' + g.role + ' in rosa da svincolare.</span>';
+            } else {
+                chip = v.candidati.map(function (c) {
+                    var on = c.player.id === svincolatoScelto && c.copre;
+                    return '<button type="button" class="cand' + (on ? ' on' : '') + '"' +
+                        (c.copre ? ' onclick="selezionaSvincolato(' + c.player.id + ')"' : ' disabled') + '>' +
+                        '<span class="cn">' + esc(c.player.name) + '</span>' +
+                        (c.fuoriListone ? '<span class="morto" title="Non presente nel listone: verifica che non sia un errore di corrispondenza dei nomi">fuori listone</span>' : '') +
+                        '<span class="cf">pagato ' + (c.player.price || 0) + '</span>' +
+                        '<span class="cf plus">rende +' + c.rimborso + '</span>' +
+                        '<span class="cf">resta ' + c.residuiDopo + '</span></button>';
+                }).join('');
+            }
+
+            box.innerHTML = '<span class="lab">' + testa + '</span><div class="rel"><div class="rel-list">' + chip + '</div>' +
+                '<button type="button" class="go" onclick="confermaOperazione()"' + (pronto ? '' : ' disabled') + '>' +
+                (acquirente
+                    ? 'Conferma <span>' + esc(g.name) + ' → ' + esc(t.name) + ' · ' + prezzo + '</span>'
+                    : 'Clicca chi se l\'è aggiudicato') + '</button></div>';
+        }
+
+        // --- CRONOLOGIA ---
+        function renderOperazioni() {
+            var ol = el('lista-operazioni');
+            var voci = historyLog.filter(function (v) { return v.tipo === 'riparazione'; });
+            if (!voci.length) { ol.innerHTML = '<p>Nessuna operazione registrata.</p>'; return; }
+
+            ol.innerHTML = voci.slice().reverse().map(function (v) {
+                var t = teams.filter(function (x) { return x.id === v.teamId; })[0];
+                var comprato = players.filter(function (p) { return p.id === v.playerId; })[0];
+                var liberato = (v.svincolatoId === null || v.svincolatoId === undefined)
+                    ? null : players.filter(function (p) { return p.id === v.svincolatoId; })[0];
+                if (!t || !comprato) return '';
+                return '<li><b>' + esc(t.name) + '</b>' +
+                    '<span>prende <b>' + esc(comprato.name) + '</b></span>' +
+                    '<span class="mono neg">&minus;' + v.price + '</span>' +
+                    (liberato
+                        ? '<span>svincola ' + esc(liberato.name) + '</span><span class="mono pos">+' + v.rimborso + '</span>'
+                        : '<span class="mono">nessuno svincolo</span>') +
+                    '<span class="mono" style="color:var(--ink-3)">residui ' + RiparazioneCore.statoSquadra(t).residui + '</span>' +
+                    '<button type="button" class="undo" onclick="annullaOperazioneRiparazione(' + v.ts + ',' + v.playerId + ')">Annulla</button></li>';
+            }).join('');
+        }
+
+        function apriCronologia() { renderOperazioni(); el('veil').classList.remove('hidden'); }
+        function chiudiCronologia() { el('veil').classList.add('hidden'); }
+
+        // --- RENDER GENERALE ---
+        function renderTutto() {
+            renderChrome();
+            if (!controllaDati()) return;
+            renderScelto();
+            renderChiamabili();
+            renderSquadre();
+            renderSvincolo();
+            renderOperazioni();
+            el('prezzo').value = prezzo;
+        }
+
+        // --- AZIONI ---
+        function impostaFase(ruolo) {
+            riparazione.ruoloCorrente = ruolo;
+            giocatoreSelezionato = null; squadraAcquirente = null; svincolatoScelto = null;
+            evidenza = -1; el('q').value = '';
+            salvaStato(); renderTutto();
+        }
+
+        function impostaMiaSquadra(valore) {
+            riparazione.miaSquadraId = valore === '' ? null : parseInt(valore, 10);
+            svincolatoScelto = null;
+            salvaStato(); renderTutto();
+        }
+
+        function applicaBonusIniziale() {
+            if (!confirm('Aggiungere ' + (riparazione.bonusValore || 50) + ' crediti a tutte le ' + teams.length + ' squadre?\n\nSi può fare una sola volta.')) return;
+            var esito = RiparazioneCore.applicaBonus(statoCorrente(), riparazione.bonusValore || 50);
+            if (!esito.ok) { alert(esito.errore); return; }
+            applicaStato(esito.stato); salvaStato(); renderTutto();
+        }
+
+        // Il filtro di ricerca resta com'e: dopo aver scelto puoi ancora
+        // confrontare con gli altri della stessa lista senza riscriverlo.
+        function selezionaGiocatore(id) {
+            giocatoreSelezionato = id;
+            squadraAcquirente = null; svincolatoScelto = null; evidenza = -1;
+            if (id !== null) {
+                var g = players.filter(function (p) { return p.id === id; })[0];
+                prezzo = 1;
+                if (g && g.role !== riparazione.ruoloCorrente) riparazione.ruoloCorrente = g.role;
+            }
+            renderTutto();
+        }
+
+        function selezionaSquadra(id) {
+            squadraAcquirente = (squadraAcquirente === id) ? null : id;
+            svincolatoScelto = null;
+            renderSquadre(); renderSvincolo();
+        }
+
+        function selezionaSvincolato(id) { svincolatoScelto = id; renderSvincolo(); }
+
+        function cambiaPrezzo(delta) {
+            prezzo = Math.max(1, prezzo + delta);
+            svincolatoScelto = null;
+            el('prezzo').value = prezzo;
+            renderSquadre(); renderSvincolo();
+        }
+
+        function confermaOperazione() {
+            var g = players.filter(function (p) { return p.id === giocatoreSelezionato; })[0];
+            var t = teams.filter(function (x) { return x.id === squadraAcquirente; })[0];
+            if (!g || !t) { alert('Scegli il giocatore e la squadra acquirente.'); return; }
+
+            var esito = RiparazioneCore.applicaOperazione(statoCorrente(), {
+                playerId: g.id, teamId: t.id, price: prezzo,
+                svincolatoId: svincolatoScelto, ts: Date.now()
+            });
+            if (!esito.ok) { alert(esito.errore); return; }
+
+            applicaStato(esito.stato);
+            giocatoreSelezionato = null; squadraAcquirente = null; svincolatoScelto = null;
+            prezzo = 1; evidenza = -1; el('q').value = '';
+            salvaStato(); renderTutto();
+        }
+
+        function annullaOperazioneRiparazione(ts, playerId) {
+            var voce = historyLog.filter(function (v) { return v.ts === ts && v.playerId === playerId; })[0];
+            if (!voce) { alert('Operazione non trovata.'); return; }
+            if (!confirm('Annullare questa operazione? Il giocatore comprato torna svincolato e quello liberato rientra in rosa con il suo prezzo.')) return;
+
+            var esito = RiparazioneCore.annullaOperazione(statoCorrente(), voce);
+            if (!esito.ok) { alert(esito.errore); return; }
+            applicaStato(esito.stato); salvaStato(); renderTutto();
+        }
+
+        // --- EVENTI ---
+        el('q').addEventListener('input', function () { evidenza = -1; renderChiamabili(); });
+        el('q').addEventListener('keydown', function (e) {
+            var lista = chiamabili();
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                if (!lista.length) return;
+                e.preventDefault();
+                evidenza = (evidenza + (e.key === 'ArrowDown' ? 1 : lista.length - 1)) % lista.length;
+                renderChiamabili();
+                var attivo = el('chiamabili').querySelector('.pl.on');
+                if (attivo && attivo.scrollIntoView) attivo.scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                var scelto = lista[evidenza >= 0 ? evidenza : 0];
+                if (scelto) selezionaGiocatore(scelto.id);
+            } else if (e.key === 'Escape') { this.value = ''; evidenza = -1; renderChiamabili(); }
+        });
+        el('prezzo').addEventListener('input', function () {
+            var v = parseInt(this.value, 10);
+            prezzo = isNaN(v) || v < 1 ? 1 : v;
+            svincolatoScelto = null;
+            renderSquadre(); renderSvincolo();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') chiudiCronologia();
+        });
+
+        // --- AVVIO ---
+        initTema();
+        inizializzaCloud();
+    </script>
+</body>
+
+</html>
