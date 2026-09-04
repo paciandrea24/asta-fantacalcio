@@ -89,6 +89,42 @@ eq('max puntata sui D: 50 residui + 10 di rimborso', CORE.maxPuntata(riferimento
 eq('max puntata senza svincolo necessario', CORE.maxPuntata(mezza, 'D'), 76);
 eq('max puntata a 0 se il reparto e pieno e non ci sono candidati', CORE.maxPuntata(squadra({ budget: 10, players: [] }), 'D'), 10);
 
+// --- valutaOfferta: il caso di riferimento, prezzo per prezzo ---
+var v60 = CORE.valutaOfferta(riferimento, 'D', 60);
+eq('offerta 60 ammessa', v60.ammessa, true);
+eq('offerta 60 richiede uno svincolo', v60.serveSvincolo, true);
+eq('offerta 60: un solo candidato copre', v60.candidatiValidi.length, 1);
+eq('offerta 60: il candidato e il D da 20', v60.suggerito.player.id, 999);
+eq('offerta 60: residui dopo l operazione', v60.suggerito.residuiDopo, 0);
+
+var v61 = CORE.valutaOfferta(riferimento, 'D', 61);
+eq('offerta 61 rifiutata', v61.ammessa, false);
+eq('offerta 61: nessun candidato valido', v61.candidatiValidi.length, 0);
+eq('offerta 61: suggerito nullo', v61.suggerito, null);
+eq('offerta 61: max puntata riportato', v61.maxPuntata, 60);
+
+var v30 = CORE.valutaOfferta(riferimento, 'D', 30);
+eq('offerta sotto i residui: tutti i candidati coprono', v30.candidatiValidi.length, v30.candidati.length);
+eq('offerta sotto i residui: resta comunque obbligatorio svincolare', v30.serveSvincolo, true);
+
+// --- valutaOfferta con slot libero: nessuno svincolo richiesto ---
+var vLibero = CORE.valutaOfferta(mezza, 'D', 40);
+eq('slot libero: offerta ammessa senza svincolo', vLibero.ammessa, true);
+eq('slot libero: nessuno svincolo richiesto', vLibero.serveSvincolo, false);
+eq('slot libero: nessun suggerito', vLibero.suggerito, null);
+eq('slot libero: residui dopo senza svincolo', vLibero.residuiSenzaSvincolo, 36);
+var vTroppo = CORE.valutaOfferta(mezza, 'D', 100);
+eq('slot libero ma crediti insufficienti', vTroppo.ammessa, false);
+
+// --- valutaOfferta: il fuori listone viene proposto per primo ---
+var conMorto = squadra({
+    budget: 200,
+    players: rosaPiena.slice(0, 23).concat([giocatore(998, 'A', 4), giocatore(997, 'A', 30, { fuoriListone: true })])
+});
+var vMorto = CORE.valutaOfferta(conMorto, 'A', 20);
+eq('il fuori listone e il suggerito', vMorto.suggerito.player.id, 997);
+eq('il fuori listone e marcato', vMorto.suggerito.fuoriListone, true);
+
 // --- riepilogo ---
 function riepilogo() { return { passati: passati, falliti: falliti, righe: righe }; }
 if (typeof module !== 'undefined' && module.exports) {

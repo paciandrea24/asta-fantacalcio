@@ -66,6 +66,46 @@
         return Math.max(0, residui + migliore);
     }
 
+    // Chiamata a ogni variazione del prezzo in asta: dice se la squadra puo
+    // permettersi il giocatore e con quale svincolo ci arriva.
+    function valutaOfferta(team, ruolo, prezzo) {
+        var residui = statoSquadra(team).residui;
+        var obbligatorio = serveSvincolo(team, ruolo);
+        var mancante = prezzo - residui;
+
+        var candidati = ordinaCandidati(candidatiSvincolo(team, ruolo)).map(function (c) {
+            return {
+                player: c.player,
+                rimborso: c.rimborso,
+                fuoriListone: c.fuoriListone,
+                residuiDopo: residui - prezzo + c.rimborso,
+                copre: c.rimborso >= mancante
+            };
+        });
+        var validi = candidati.filter(function (c) { return c.copre; });
+
+        if (!obbligatorio) {
+            return {
+                ammessa: prezzo <= residui,
+                serveSvincolo: false,
+                maxPuntata: maxPuntata(team, ruolo),
+                candidati: candidati,
+                candidatiValidi: validi,
+                suggerito: null,
+                residuiSenzaSvincolo: residui - prezzo
+            };
+        }
+        return {
+            ammessa: validi.length > 0,
+            serveSvincolo: true,
+            maxPuntata: maxPuntata(team, ruolo),
+            candidati: candidati,
+            candidatiValidi: validi,
+            suggerito: validi.length > 0 ? validi[0] : null,
+            residuiSenzaSvincolo: null
+        };
+    }
+
     var API = {
         MAX_SLOTS: MAX_SLOTS,
         ROSA_PIENA: ROSA_PIENA,
@@ -74,7 +114,8 @@
         serveSvincolo: serveSvincolo,
         candidatiSvincolo: candidatiSvincolo,
         ordinaCandidati: ordinaCandidati,
-        maxPuntata: maxPuntata
+        maxPuntata: maxPuntata,
+        valutaOfferta: valutaOfferta
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = API;
