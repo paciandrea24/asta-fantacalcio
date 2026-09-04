@@ -193,6 +193,17 @@
                         </svg>
                     </button>
 
+                    <!-- COLLEGAMENTO ALL'ASTA DI RIPARAZIONE -->
+                    <a href="riparazione.html"
+                        class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5 shadow-2xs"
+                        title="Apri la pagina dell'asta di riparazione (acquisto + svincolo, calcolo del massimo puntabile)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        <span>Asta di Riparazione</span>
+                    </a>
+
                     <!-- NUOVO TASTO GRIGLIA PORTIERI -->
                     <button type="button" onclick="apriModaleGriglia()"
                         class="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold py-2 px-3 rounded-lg transition flex items-center gap-1.5 shadow-2xs">
@@ -908,7 +919,9 @@
             localStorage.setItem('fanta_budget', BUDGET_INIZIALE.toString());
 
             if (firebaseConnesso && dbRef && !stoRicevendoDalCloud) {
-                dbRef.set({
+                // update() e non set(): set sostituisce l'intero nodo e
+                // cancellerebbe il ramo "riparazione" scritto da riparazione.html
+                dbRef.update({
                     teams: teams,
                     players: players,
                     historyLog: historyLog,
@@ -1790,6 +1803,14 @@
         function annullaAcquisto(playerId) {
             const player = players.find(p => p.id === playerId);
             if (!player || player.status !== 'sold') return;
+
+            // Le operazioni di riparazione sono acquisto + svincolo insieme:
+            // annullarle da qui lascerebbe la rosa a 24 con i crediti sbagliati.
+            const voceRiparazione = historyLog.find(v => v.playerId === playerId && v.tipo === 'riparazione');
+            if (voceRiparazione) {
+                alert("Questa è un'operazione dell'asta di riparazione (acquisto + svincolo).\n\nAnnullala dalla pagina \"Asta di Riparazione\", altrimenti la rosa resta a 24 giocatori con i crediti sbagliati.");
+                return;
+            }
             const team = teams.find(t => t.id === player.soldTo);
             if (team && team.players) { team.players = team.players.filter(p => p.id !== playerId); }
             player.status = 'free'; delete player.soldTo; delete player.price;
