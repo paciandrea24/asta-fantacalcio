@@ -145,25 +145,53 @@
         .bbar { display: flex; align-items: center; gap: 11px; flex-wrap: wrap; padding: 10px 13px; }
         .bbar .sep { width: 1px; align-self: stretch; background: var(--line-soft); }
 
-        .search { position: relative; flex: 1 1 210px; max-width: 300px; }
+        .search { flex: 1 1 210px; max-width: 300px; }
         .search input {
             width: 100%; padding: 8px 11px; background: var(--surface);
             border: 1px solid var(--line); border-radius: var(--radius);
         }
-        .results {
-            position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px);
-            background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
-            max-height: 300px; overflow-y: auto; box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+
+        /* ---------- elenco dei chiamabili ---------- */
+        .testa-lista { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+        .testa-lista .lab { margin: 0; }
+        .ord { display: flex; gap: 3px; margin-left: auto; }
+        .ord button {
+            background: none; border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 2px 9px; font-size: 11px; font-weight: 600; color: var(--ink-3);
         }
-        .results:empty { display: none; }
-        .results button {
-            display: flex; width: 100%; align-items: baseline; gap: 9px; text-align: left;
-            background: none; border: 0; border-bottom: 1px solid var(--line-soft); padding: 7px 11px;
+        .ord button[aria-pressed="true"] { background: var(--accent-w); border-color: var(--accent); color: var(--accent); }
+
+        .chiamabili {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+            gap: 4px; max-height: 190px; overflow-y: auto; padding-right: 3px;
         }
-        .results button:last-child { border-bottom: 0; }
-        .results button:hover, .results button.on { background: var(--accent-w); }
-        .results .club { color: var(--ink-3); font-size: 11.5px; }
-        .results .fvm { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+        .pl {
+            display: flex; align-items: stretch;
+            background: var(--surface); border: 1px solid var(--line-soft);
+            border-radius: var(--radius); font-size: 12px; overflow: hidden;
+        }
+        .pl:hover { border-color: var(--accent); background: var(--accent-w); }
+        .pl.on { border-color: var(--accent); border-width: 2px; background: var(--accent-w); }
+        .pl.scelto { border-color: var(--pick); border-width: 2px; background: var(--sunken); }
+        .pl .go-pl {
+            flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 7px;
+            text-align: left; background: none; border: 0; padding: 5px 8px;
+        }
+        .pl .nm { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pl .club { color: var(--ink-3); font-size: 10.5px; white-space: nowrap; }
+        .pl .fvm {
+            margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+            font-variant-numeric: tabular-nums; flex: 0 0 auto;
+        }
+        .scheda {
+            flex: 0 0 auto; display: flex; align-items: center; padding: 0 7px;
+            border-left: 1px solid var(--line-soft); color: var(--ink-3);
+            text-decoration: none; font-size: 12px; line-height: 1;
+        }
+        .scheda:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+        :root[data-theme="dark"] .scheda:hover { color: #241705; }
+        .chosen .scheda { border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 7px; }
+        .vuota { color: var(--ink-3); font-style: italic; font-size: 12.5px; grid-column: 1 / -1; padding: 10px 0; }
 
         .chosen { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
         .chosen .pname { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
@@ -221,9 +249,6 @@
         .sv b { font-weight: 600; }
         .sv .plus { font-family: var(--mono); color: var(--yes); font-weight: 600; }
         .sv.vuoto { color: var(--ink-3); font-style: italic; }
-        .slots { display: flex; gap: 6px; font-family: var(--mono); font-size: 10.5px; }
-        .slots .pieno { color: var(--ink-3); }
-        .slots .libero { color: var(--accent); font-weight: 600; }
 
         /* ---------- svincolo ---------- */
         .rel { display: flex; gap: 9px; align-items: flex-start; flex-wrap: wrap; }
@@ -319,8 +344,7 @@
         <div class="board" id="board">
             <div class="bbar">
                 <div class="search">
-                    <input type="text" id="q" placeholder="Cerca uno svincolato…" autocomplete="off">
-                    <div class="results" id="risultati"></div>
+                    <input type="text" id="q" placeholder="Filtra per nome o squadra…" autocomplete="off">
                 </div>
                 <div class="sep"></div>
                 <div id="scelto"></div>
@@ -332,6 +356,18 @@
                     <button type="button" onclick="cambiaPrezzo(5)">+5</button>
                     <span class="cr">cr</span>
                 </div>
+            </div>
+
+            <div class="band">
+                <div class="testa-lista">
+                    <span class="lab" id="lab-chiamabili">Chiamabili</span>
+                    <div class="ord" id="ord">
+                        <button type="button" onclick="impostaOrdine('fvm')" aria-pressed="true">FVM</button>
+                        <button type="button" onclick="impostaOrdine('qta')" aria-pressed="false">Qt.A</button>
+                        <button type="button" onclick="impostaOrdine('nome')" aria-pressed="false">Nome</button>
+                    </div>
+                </div>
+                <div class="chiamabili" id="chiamabili"></div>
             </div>
 
             <div class="band">
@@ -367,6 +403,7 @@
         var svincolatoScelto = null;
         var prezzo = 1;
         var evidenza = -1;
+        var ordinamento = 'fvm';
 
         var RUOLI = ['P', 'D', 'C', 'A'];
         var ETICHETTA = { P: 'Portieri', D: 'Difensori', C: 'Centrocampisti', A: 'Attaccanti' };
@@ -533,24 +570,79 @@
             el('btn-log').textContent = n ? 'Cronologia (' + n + ')' : 'Cronologia';
         }
 
-        // --- RICERCA ---
-        function renderRicerca() {
-            var box = el('risultati');
+        // --- SCHEDA SU FANTACALCIO.IT ---
+        // L'URL e .../squadre/<squadra>/<nome>/<id>, ma il sito risolve sull'id:
+        // uno slug approssimativo porta comunque alla scheda giusta.
+        // Niente link per i "fuori listone" e per gli id inventati dall'import.
+        function slug(s) {
+            return String(s == null ? '' : s)
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'giocatore';
+        }
+
+        function schedaUrl(p) {
+            if (!p || p.fuoriListone || p.senzaId || !(p.id > 0)) return null;
+            return 'https://www.fantacalcio.it/serie-a/squadre/' + slug(p.team) + '/' + slug(p.name) + '/' + p.id;
+        }
+
+        function linkScheda(p) {
+            var url = schedaUrl(p);
+            if (!url) return '';
+            return '<a class="scheda" href="' + url + '" target="_blank" rel="noopener" ' +
+                'title="Scheda di ' + esc(p.name) + ' su Fantacalcio.it" ' +
+                'onclick="event.stopPropagation()">&#8599;</a>';
+        }
+
+        // --- ELENCO DEI CHIAMABILI ---
+        // Tutti gli svincolati del ruolo in corso. La casella di ricerca non apre
+        // una tendina: filtra questo elenco, cosi la lista resta una sola.
+        function chiamabili() {
             var q = el('q').value.trim().toLowerCase();
-            if (!q) { box.innerHTML = ''; return; }
             var lista = players.filter(function (p) {
                 if (p.status !== 'free' || p.role !== riparazione.ruoloCorrente) return false;
+                if (!q) return true;
                 return p.name.toLowerCase().indexOf(q) !== -1 || String(p.team).toLowerCase().indexOf(q) !== -1;
-            }).sort(function (a, b) { return (b.fvm || 0) - (a.fvm || 0); }).slice(0, 10);
+            });
+            lista.sort(function (a, b) {
+                if (ordinamento === 'qta') return (b.qta || 0) - (a.qta || 0);
+                if (ordinamento === 'nome') return String(a.name).localeCompare(String(b.name), 'it');
+                return (b.fvm || 0) - (a.fvm || 0);
+            });
+            return lista;
+        }
 
-            box.innerHTML = lista.map(function (p, i) {
-                return '<button type="button" data-pid="' + p.id + '" class="' + (i === evidenza ? 'on' : '') + '">' +
-                    '<span class="role">' + p.role + '</span>' +
-                    '<span>' + esc(p.name) + '</span>' +
+        function renderChiamabili() {
+            var lista = chiamabili();
+            var tuttiDelRuolo = players.filter(function (p) {
+                return p.status === 'free' && p.role === riparazione.ruoloCorrente;
+            }).length;
+            var filtrato = el('q').value.trim() !== '';
+
+            el('lab-chiamabili').textContent = 'Chiamabili — ' +
+                (filtrato ? lista.length + ' di ' + tuttiDelRuolo : String(tuttiDelRuolo)) +
+                ' ' + ETICHETTA[riparazione.ruoloCorrente].toLowerCase() + ' svincolati';
+
+            ['fvm', 'qta', 'nome'].forEach(function (o, i) {
+                el('ord').children[i].setAttribute('aria-pressed', String(ordinamento === o));
+            });
+
+            if (lista.length === 0) {
+                el('chiamabili').innerHTML = '<p class="vuota">Nessun ' + riparazione.ruoloCorrente +
+                    ' svincolato' + (filtrato ? ' corrisponde al filtro.' : '.') + '</p>';
+                return;
+            }
+            el('chiamabili').innerHTML = lista.map(function (p, i) {
+                var cls = 'pl' + (p.id === giocatoreSelezionato ? ' scelto' : (i === evidenza ? ' on' : ''));
+                return '<div class="' + cls + '" data-pid="' + p.id + '">' +
+                    '<button type="button" class="go-pl" onclick="selezionaGiocatore(' + p.id + ')">' +
+                    '<span class="nm">' + esc(p.name) + '</span>' +
                     '<span class="club">' + esc(p.team) + '</span>' +
-                    '<span class="fvm">FVM ' + (p.fvm || '-') + '</span></button>';
+                    '<span class="fvm">' + (ordinamento === 'qta' ? (p.qta || '-') : (p.fvm || '-')) + '</span>' +
+                    '</button>' + linkScheda(p) + '</div>';
             }).join('');
         }
+
+        function impostaOrdine(o) { ordinamento = o; evidenza = -1; renderChiamabili(); }
 
         function renderScelto() {
             var g = players.filter(function (p) { return p.id === giocatoreSelezionato; })[0];
@@ -558,6 +650,7 @@
                 ? '<div class="chosen"><span class="role">' + g.role + '</span>' +
                   '<span class="pname">' + esc(g.name) + '</span>' +
                   '<span class="meta">' + esc(g.team) + ' · FVM ' + (g.fvm || '-') + '</span>' +
+                  linkScheda(g) +
                   '<button type="button" class="x" onclick="selezionaGiocatore(null)" title="Togli dalla lavagna">&times;</button></div>'
                 : '<span class="hint">Cerca chi è in asta</span>';
         }
@@ -586,17 +679,13 @@
                         ? '<span class="sv">slot ' + ruolo + ' libero, nessuno svincolo</span>'
                         : '<span class="sv vuoto">nessuno svincolo ci arriva</span>';
 
-                var slots = '<span class="slots">' + RUOLI.map(function (r) {
-                    var n = s.slotOccupati[r];
-                    return '<span class="' + (n >= RiparazioneCore.MAX_SLOTS[r] ? 'pieno' : 'libero') + '">' +
-                        r + ' ' + n + '/' + RiparazioneCore.MAX_SLOTS[r] + '</span>';
-                }).join('') + '</span>';
-
+                // Niente conteggio degli slot: le rose partono complete e ogni
+                // acquisto e compensato da uno svincolo, quindi non cambia mai.
                 return '<button type="button" class="' + cls + '" onclick="selezionaSquadra(' + t.id + ')">' +
                     '<span class="tn"><span class="txt">' + esc(t.name) + '</span>' + (mia ? '<span class="tu">tu</span>' : '') + '</span>' +
                     '<span class="figs"><span>res <b>' + s.residui + '</b></span><span>max <b>' + v.maxPuntata + '</b></span>' +
                     '<span class="pill ' + (v.ammessa ? 'y' : 'n') + '">' + (v.ammessa ? 'può' : 'fuori') + '</span></span>' +
-                    riga + slots + '</button>';
+                    riga + '</button>';
             }).join('');
         }
 
@@ -686,6 +775,7 @@
             renderChrome();
             if (!controllaDati()) return;
             renderScelto();
+            renderChiamabili();
             renderSquadre();
             renderSvincolo();
             renderOperazioni();
@@ -696,7 +786,7 @@
         function impostaFase(ruolo) {
             riparazione.ruoloCorrente = ruolo;
             giocatoreSelezionato = null; squadraAcquirente = null; svincolatoScelto = null;
-            el('q').value = ''; el('risultati').innerHTML = '';
+            evidenza = -1; el('q').value = '';
             salvaStato(); renderTutto();
         }
 
@@ -713,10 +803,11 @@
             applicaStato(esito.stato); salvaStato(); renderTutto();
         }
 
+        // Il filtro di ricerca resta com'e: dopo aver scelto puoi ancora
+        // confrontare con gli altri della stessa lista senza riscriverlo.
         function selezionaGiocatore(id) {
             giocatoreSelezionato = id;
             squadraAcquirente = null; svincolatoScelto = null; evidenza = -1;
-            el('q').value = ''; el('risultati').innerHTML = '';
             if (id !== null) {
                 var g = players.filter(function (p) { return p.id === id; })[0];
                 prezzo = 1;
@@ -753,7 +844,7 @@
 
             applicaStato(esito.stato);
             giocatoreSelezionato = null; squadraAcquirente = null; svincolatoScelto = null;
-            prezzo = 1; el('q').value = ''; el('risultati').innerHTML = '';
+            prezzo = 1; evidenza = -1; el('q').value = '';
             salvaStato(); renderTutto();
         }
 
@@ -768,23 +859,21 @@
         }
 
         // --- EVENTI ---
-        el('q').addEventListener('input', function () { evidenza = -1; renderRicerca(); });
+        el('q').addEventListener('input', function () { evidenza = -1; renderChiamabili(); });
         el('q').addEventListener('keydown', function (e) {
-            var bottoni = el('risultati').querySelectorAll('button');
+            var lista = chiamabili();
             if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                if (!bottoni.length) return;
+                if (!lista.length) return;
                 e.preventDefault();
-                evidenza = (evidenza + (e.key === 'ArrowDown' ? 1 : bottoni.length - 1)) % bottoni.length;
-                renderRicerca();
+                evidenza = (evidenza + (e.key === 'ArrowDown' ? 1 : lista.length - 1)) % lista.length;
+                renderChiamabili();
+                var attivo = el('chiamabili').querySelector('.pl.on');
+                if (attivo && attivo.scrollIntoView) attivo.scrollIntoView({ block: 'nearest' });
             } else if (e.key === 'Enter') {
                 e.preventDefault();
-                var scelto = bottoni[evidenza >= 0 ? evidenza : 0];
-                if (scelto) selezionaGiocatore(parseInt(scelto.getAttribute('data-pid'), 10));
-            } else if (e.key === 'Escape') { this.value = ''; renderRicerca(); }
-        });
-        el('risultati').addEventListener('click', function (e) {
-            var b = e.target.closest('button[data-pid]');
-            if (b) selezionaGiocatore(parseInt(b.getAttribute('data-pid'), 10));
+                var scelto = lista[evidenza >= 0 ? evidenza : 0];
+                if (scelto) selezionaGiocatore(scelto.id);
+            } else if (e.key === 'Escape') { this.value = ''; evidenza = -1; renderChiamabili(); }
         });
         el('prezzo').addEventListener('input', function () {
             var v = parseInt(this.value, 10);

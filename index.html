@@ -1043,8 +1043,16 @@
                         const squadra = idxSquadra !== -1 && row[idxSquadra] ? String(row[idxSquadra]).trim() : "Svincolato";
                         const fvm = idxFvm !== -1 && row[idxFvm] ? parseInt(row[idxFvm]) || 0 : 0;
                         const qta = idxQta !== -1 && row[idxQta] ? parseInt(row[idxQta]) || 1 : 1;
-                        const id = idxId !== -1 && row[idxId] ? parseInt(row[idxId]) || (idCounter++) : (idCounter++);
-                        if (['P', 'D', 'C', 'A'].includes(ruolo)) { nuoviGiocatori.push({ id, name: nome, role: ruolo, team: squadra, status: 'free', fvm, qta }); }
+                        const idFile = idxId !== -1 && row[idxId] ? parseInt(row[idxId]) : NaN;
+                        const id = idFile || (idCounter++);
+                        // Senza Id vero nel file l'id e inventato: la pagina di riparazione
+                        // non deve costruirci sopra il link alla scheda, porterebbe a un altro giocatore.
+                        const senzaId = !idFile;
+                        if (['P', 'D', 'C', 'A'].includes(ruolo)) {
+                            const g = { id, name: nome, role: ruolo, team: squadra, status: 'free', fvm, qta };
+                            if (senzaId) g.senzaId = true;
+                            nuoviGiocatori.push(g);
+                        }
                     }
 
                     if (nuoviGiocatori.length > 0) {
