@@ -66,7 +66,30 @@
         <!-- AVVISO DATI MANCANTI O VECCHI -->
         <div id="avviso-dati" class="hidden bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 px-4 py-3 rounded-xl text-sm shadow-2xs"></div>
 
-        <div id="contenuto" class="grid grid-cols-1 lg:grid-cols-12 gap-4"></div>
+        <div id="contenuto" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <section class="lg:col-span-5 space-y-3">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 space-y-3">
+                    <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Banco d'asta</h2>
+
+                    <input type="text" id="input-ricerca" oninput="aggiornaRicerca(this.value)" placeholder="Cerca uno svincolato..."
+                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <div id="lista-svincolati" class="max-h-64 overflow-y-auto space-y-1 pr-1"></div>
+
+                    <div id="box-selezione" class="space-y-2"></div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+                    <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chi svincolare</h2>
+                    <div id="lista-candidati" class="space-y-1"></div>
+                    <button type="button" id="btn-conferma" onclick="confermaOperazione()"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-black py-2.5 rounded-lg transition shadow-2xs">
+                        Conferma operazione
+                    </button>
+                </div>
+            </section>
+
+            <section id="colonna-destra" class="lg:col-span-7 space-y-3"></section>
+        </div>
     </div>
 
     <script src="config.js"></script>
@@ -258,13 +281,216 @@
                 : '+' + (riparazione.bonusValore || 50) + ' crediti a tutti';
         }
 
-        // In questo stadio il contenitore centrale resta vuoto: lo riempiono
-        // le funzioni del banco e del tabellone.
+        // --- BANCO D'ASTA ---
+        var COLORI_RUOLO = {
+            P: 'bg-yellow-100 dark:bg-yellow-900/60 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
+            D: 'bg-green-100 dark:bg-green-900/60 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+            C: 'bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+            A: 'bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
+        };
+
+        function badgeRuolo(ruolo) {
+            return '<span class="font-bold px-1 py-0.5 rounded border text-[9px] ' + COLORI_RUOLO[ruolo] + '">' + ruolo + '</span>';
+        }
+
+        function prezzoCorrente() {
+            var campo = document.getElementById('input-prezzo');
+            if (!campo) return 1;
+            var v = parseInt(campo.value, 10);
+            return isNaN(v) || v < 1 ? 1 : v;
+        }
+
+        function aggiornaRicerca(valore) {
+            ricerca = (valore || '').toLowerCase();
+            renderListaSvincolati();
+        }
+
+        function selezionaGiocatore(id) {
+            giocatoreSelezionato = id;
+            svincolatoScelto = null;
+            renderBanco();
+        }
+
+        function selezionaSquadra(id) {
+            squadraAcquirente = id;
+            svincolatoScelto = null;
+            renderBanco();
+        }
+
+        function selezionaSvincolato(id) {
+            svincolatoScelto = id;
+            renderCandidati();
+        }
+
+        function cambiaPrezzo(delta) {
+            var campo = document.getElementById('input-prezzo');
+            var v = prezzoCorrente() + delta;
+            campo.value = v < 1 ? 1 : v;
+            // Il prezzo cambia chi puo permetterselo: si ricalcola tutto.
+            svincolatoScelto = null;
+            renderCandidati();
+            renderColonnaDestra();
+        }
+
+        function renderListaSvincolati() {
+            var box = document.getElementById('lista-svincolati');
+            if (!box) return;
+            var ruolo = riparazione.ruoloCorrente;
+            var lista = players.filter(function (p) {
+                if (p.status !== 'free' || p.role !== ruolo) return false;
+                if (!ricerca) return true;
+                return p.name.toLowerCase().indexOf(ricerca) !== -1 || String(p.team).toLowerCase().indexOf(ricerca) !== -1;
+            }).sort(function (a, b) { return (b.fvm || 0) - (a.fvm || 0); }).slice(0, 60);
+
+            if (lista.length === 0) {
+                box.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Nessuno svincolato di ruolo ' + ruolo + '</p>';
+                return;
+            }
+            box.innerHTML = lista.map(function (p) {
+                var scelto = giocatoreSelezionato === p.id;
+                var riga = scelto
+                    ? 'bg-indigo-100/90 dark:bg-indigo-950/80 border-indigo-400 dark:border-indigo-600 font-bold'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 border-transparent hover:border-slate-200 dark:hover:border-slate-600';
+                return '<div class="flex justify-between items-center p-1.5 rounded border cursor-pointer text-[11px] transition ' + riga + '" onclick="selezionaGiocatore(' + p.id + ')">' +
+                    '<div class="flex items-center gap-1.5 truncate pr-1">' + badgeRuolo(p.role) +
+                    '<span class="font-bold text-slate-800 dark:text-slate-100">' + p.name + '</span>' +
+                    '<span class="text-slate-400 text-[10px]">(' + p.team + ')</span></div>' +
+                    '<span class="bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold px-1.5 rounded text-[10px] shrink-0">FVM ' + (p.fvm || '-') + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function renderBoxSelezione() {
+            var box = document.getElementById('box-selezione');
+            if (!box) return;
+            var g = players.find(function (p) { return p.id === giocatoreSelezionato; });
+            if (!g) {
+                box.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3 border border-dashed border-slate-300 dark:border-slate-600 rounded-lg">Seleziona un giocatore dalla lista</p>';
+                return;
+            }
+            var prezzo = document.getElementById('input-prezzo') ? prezzoCorrente() : 1;
+            box.innerHTML =
+                '<div class="p-2 bg-indigo-50/80 dark:bg-indigo-950/60 border-2 border-indigo-400 dark:border-indigo-600 rounded-lg flex justify-between items-center text-xs">' +
+                '<span class="font-black text-slate-800 dark:text-slate-100">' + badgeRuolo(g.role) + ' ' + g.name + ' <span class="text-slate-400 font-normal">(' + g.team + ')</span></span>' +
+                '<button type="button" onclick="selezionaGiocatore(null)" class="text-rose-600 dark:text-rose-400 font-bold">&times;</button>' +
+                '</div>' +
+                '<div class="flex items-center gap-1.5">' +
+                '<button type="button" onclick="cambiaPrezzo(-5)" class="px-2 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-black">-5</button>' +
+                '<button type="button" onclick="cambiaPrezzo(-1)" class="px-2 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-black">-1</button>' +
+                '<input type="number" id="input-prezzo" value="' + prezzo + '" min="1" oninput="cambiaPrezzo(0)" ' +
+                'class="grow text-center px-2 py-1.5 border-2 border-indigo-300 dark:border-indigo-700 rounded-lg text-lg font-black bg-white dark:bg-slate-900 dark:text-slate-100 outline-hidden focus:ring-2 focus:ring-indigo-500">' +
+                '<button type="button" onclick="cambiaPrezzo(1)" class="px-2 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-black">+1</button>' +
+                '<button type="button" onclick="cambiaPrezzo(5)" class="px-2 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-xs font-black">+5</button>' +
+                '</div>' +
+                '<div id="griglia-squadre" class="grid grid-cols-2 gap-1.5"></div>';
+            renderGrigliaSquadre();
+        }
+
+        function renderGrigliaSquadre() {
+            var box = document.getElementById('griglia-squadre');
+            if (!box) return;
+            var ruolo = riparazione.ruoloCorrente;
+            var prezzo = prezzoCorrente();
+            box.innerHTML = teams.map(function (t) {
+                var v = RiparazioneCore.valutaOfferta(t, ruolo, prezzo);
+                var attiva = squadraAcquirente === t.id;
+                var cls = attiva
+                    ? 'bg-indigo-600 text-white border-indigo-700 font-extrabold'
+                    : v.ammessa
+                        ? 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-indigo-300 font-semibold'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-dashed border-slate-300 dark:border-slate-600 opacity-60';
+                return '<button type="button" onclick="selezionaSquadra(' + t.id + ')" title="Max ' + v.maxPuntata + ' su un ' + ruolo + '" ' +
+                    'class="p-1.5 rounded-lg border text-[11px] transition flex justify-between items-center gap-1 truncate ' + cls + '">' +
+                    '<span class="truncate">' + t.name + '</span>' +
+                    '<span class="font-mono font-bold shrink-0">' + v.maxPuntata + '</span></button>';
+            }).join('');
+        }
+
+        function renderCandidati() {
+            var box = document.getElementById('lista-candidati');
+            var btn = document.getElementById('btn-conferma');
+            if (!box) return;
+
+            var g = players.find(function (p) { return p.id === giocatoreSelezionato; });
+            var t = teams.find(function (x) { return x.id === squadraAcquirente; });
+            if (!g || !t) {
+                box.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-3">Scegli un giocatore e la squadra acquirente</p>';
+                btn.disabled = true;
+                return;
+            }
+
+            var prezzo = prezzoCorrente();
+            var v = RiparazioneCore.valutaOfferta(t, g.role, prezzo);
+
+            if (!v.serveSvincolo) {
+                var libero = v.ammessa;
+                box.innerHTML = '<div class="p-2 rounded-lg border text-xs ' +
+                    (libero ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-700 text-rose-800 dark:text-rose-300') + '">' +
+                    '<strong>' + t.name + '</strong> ha uno slot ' + g.role + ' libero: nessuno svincolo necessario. ' +
+                    'Residui dopo l\'acquisto: <strong>' + v.residuiSenzaSvincolo + '</strong>.' +
+                    (libero ? '' : ' Crediti insufficienti, massimo ' + v.maxPuntata + '.') + '</div>';
+                svincolatoScelto = null;
+                btn.disabled = !libero;
+                return;
+            }
+
+            if (v.candidati.length === 0) {
+                box.innerHTML = '<p class="text-xs text-rose-600 dark:text-rose-400 py-3">' + t.name + ' non ha giocatori di ruolo ' + g.role + ' da svincolare.</p>';
+                btn.disabled = true;
+                return;
+            }
+
+            // Al primo render proponiamo il suggerito, ma resta modificabile.
+            if (svincolatoScelto === null && v.suggerito) svincolatoScelto = v.suggerito.player.id;
+            if (svincolatoScelto !== null && !v.candidatiValidi.some(function (c) { return c.player.id === svincolatoScelto; })) {
+                svincolatoScelto = v.suggerito ? v.suggerito.player.id : null;
+            }
+
+            box.innerHTML =
+                '<div class="text-[11px] font-bold px-1 pb-1 ' + (v.ammessa ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400') + '">' +
+                (v.ammessa ? 'A ' + prezzo + ' crediti ' + t.name + ' ce la fa' : 'A ' + prezzo + ' crediti ' + t.name + ' non ce la fa: massimo ' + v.maxPuntata) +
+                '</div>' +
+                v.candidati.map(function (c) {
+                    var scelto = svincolatoScelto === c.player.id;
+                    var cls = !c.copre
+                        ? 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 opacity-70'
+                        : scelto
+                            ? 'bg-emerald-100 dark:bg-emerald-950/70 border-emerald-500 dark:border-emerald-600 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-400'
+                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:border-emerald-400 text-slate-700 dark:text-slate-200';
+                    var badgeMorto = c.fuoriListone
+                        ? '<span class="bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 px-1 rounded text-[9px] font-bold" title="Non presente nel listone: probabilmente ha lasciato la Serie A. Verifica che non sia un errore di corrispondenza dei nomi.">fuori listone</span>'
+                        : '';
+                    return '<div class="flex justify-between items-center p-1.5 rounded-lg border text-[11px] transition ' +
+                        (c.copre ? 'cursor-pointer ' : '') + cls + '"' +
+                        (c.copre ? ' onclick="selezionaSvincolato(' + c.player.id + ')"' : '') + '>' +
+                        '<div class="flex items-center gap-1.5 truncate pr-1"><span class="font-bold">' + c.player.name + '</span>' + badgeMorto + '</div>' +
+                        '<div class="flex items-center gap-2 shrink-0 font-mono">' +
+                        '<span title="Prezzo pagato">pagato ' + (c.player.price || 0) + '</span>' +
+                        '<span class="font-black text-emerald-600 dark:text-emerald-400" title="Crediti restituiti">+' + c.rimborso + '</span>' +
+                        '<span title="Residui dopo l\'operazione">&rarr; ' + c.residuiDopo + '</span>' +
+                        '</div></div>';
+                }).join('');
+
+            btn.disabled = !v.ammessa || svincolatoScelto === null;
+        }
+
+        function renderBanco() {
+            renderListaSvincolati();
+            renderBoxSelezione();
+            renderCandidati();
+            renderColonnaDestra();
+        }
+
+        function renderColonnaDestra() { }
+
         function renderTutto() {
             renderTestata();
             renderBarraFase();
             var datiOk = controllaDati();
             document.getElementById('contenuto').classList.toggle('hidden', !datiOk);
+            if (!datiOk) return;
+            renderBanco();
         }
 
         // --- AVVIO ---
