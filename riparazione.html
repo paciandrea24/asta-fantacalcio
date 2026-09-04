@@ -482,7 +482,95 @@
             renderColonnaDestra();
         }
 
-        function renderColonnaDestra() { }
+        // --- PANNELLO PERSONALE E TABELLONE AVVERSARI ---
+        function renderColonnaDestra() {
+            var box = document.getElementById('colonna-destra');
+            if (!box) return;
+            box.innerHTML =
+                '<div id="mio-pannello" class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3"></div>' +
+                '<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3">' +
+                '<h2 class="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Avversari</h2>' +
+                '<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead>' +
+                '<tr class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">' +
+                '<th class="py-1 px-2">Squadra</th><th class="py-1 px-2">Residui</th><th class="py-1 px-2">Max ' + riparazione.ruoloCorrente + '</th>' +
+                '<th class="py-1 px-2">Al prezzo</th><th class="py-1 px-2">Svincolerebbe</th>' +
+                '<th class="py-1 px-1 text-center">P</th><th class="py-1 px-1 text-center">D</th><th class="py-1 px-1 text-center">C</th><th class="py-1 px-1 text-center">A</th>' +
+                '</tr></thead><tbody id="corpo-tabellone"></tbody></table></div></div>' +
+                '<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3">' +
+                '<h2 class="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Operazioni</h2>' +
+                '<div id="lista-operazioni" class="space-y-1 max-h-64 overflow-y-auto pr-1"></div></div>';
+            renderMioPannello();
+            renderTabellone();
+            renderOperazioni();
+        }
+
+        function renderMioPannello() {
+            var box = document.getElementById('mio-pannello');
+            if (!box) return;
+            var mia = teams.find(function (t) { return t.id === riparazione.miaSquadraId; });
+            if (!mia) {
+                box.innerHTML = '<p class="text-xs text-slate-400 italic">Scegli "La mia squadra" in alto per vedere qui i tuoi crediti e i tuoi candidati allo svincolo.</p>';
+                return;
+            }
+            var ruolo = riparazione.ruoloCorrente;
+            var prezzo = giocatoreSelezionato !== null ? prezzoCorrente() : 0;
+            var s = RiparazioneCore.statoSquadra(mia);
+            var v = RiparazioneCore.valutaOfferta(mia, ruolo, prezzo || 1);
+
+            box.innerHTML =
+                '<div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 mb-2">' +
+                '<h2 class="text-sm font-black text-slate-700 dark:text-slate-200">' + mia.name + '</h2>' +
+                '<span class="text-xs text-slate-500 dark:text-slate-400">Residui <strong class="font-mono text-emerald-600 dark:text-emerald-400 text-sm">' + s.residui + '</strong></span>' +
+                '<span class="text-xs text-slate-500 dark:text-slate-400">Massimo su un ' + ruolo + ' <strong class="font-mono text-indigo-600 dark:text-indigo-400 text-sm">' + v.maxPuntata + '</strong></span>' +
+                '</div>' +
+                '<div class="grid grid-cols-2 md:grid-cols-3 gap-1">' +
+                RiparazioneCore.ordinaCandidati(RiparazioneCore.candidatiSvincolo(mia, ruolo)).map(function (c) {
+                    var badge = c.fuoriListone ? ' <span class="text-amber-600 dark:text-amber-400 font-bold" title="Non presente nel listone">!</span>' : '';
+                    return '<div class="flex justify-between items-center px-1.5 py-1 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/40 text-[10px]">' +
+                        '<span class="truncate pr-1 font-bold text-slate-700 dark:text-slate-200">' + c.player.name + badge + '</span>' +
+                        '<span class="font-mono shrink-0 text-emerald-600 dark:text-emerald-400 font-bold">+' + c.rimborso + '</span></div>';
+                }).join('') +
+                '</div>';
+        }
+
+        function renderTabellone() {
+            var corpo = document.getElementById('corpo-tabellone');
+            if (!corpo) return;
+            var ruolo = riparazione.ruoloCorrente;
+            var inAsta = giocatoreSelezionato !== null;
+            var prezzo = inAsta ? prezzoCorrente() : 0;
+
+            corpo.innerHTML = teams.map(function (t) {
+                var s = RiparazioneCore.statoSquadra(t);
+                var v = RiparazioneCore.valutaOfferta(t, ruolo, prezzo || 1);
+                var mia = t.id === riparazione.miaSquadraId;
+
+                var semaforo = !inAsta
+                    ? '<span class="text-slate-400">—</span>'
+                    : v.ammessa
+                        ? '<span class="bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 font-bold px-1.5 py-0.5 rounded">può a ' + prezzo + '</span>'
+                        : '<span class="bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300 font-bold px-1.5 py-0.5 rounded">fuori</span>';
+
+                var costretta = (inAsta && v.ammessa && v.suggerito)
+                    ? v.suggerito.player.name + ' <span class="text-emerald-600 dark:text-emerald-400 font-mono">+' + v.suggerito.rimborso + '</span>'
+                    : '<span class="text-slate-400">—</span>';
+
+                var slot = ['P', 'D', 'C', 'A'].map(function (r) {
+                    var pieno = s.slotOccupati[r] >= RiparazioneCore.MAX_SLOTS[r];
+                    return '<td class="py-1 px-1 text-center ' + (pieno ? 'text-slate-400' : 'text-amber-600 dark:text-amber-400 font-bold') + '">' +
+                        s.slotOccupati[r] + '/' + RiparazioneCore.MAX_SLOTS[r] + '</td>';
+                }).join('');
+
+                return '<tr class="border-b border-slate-100 dark:border-slate-700/60 ' + (mia ? 'bg-indigo-50/70 dark:bg-indigo-950/40 font-bold' : '') + '">' +
+                    '<td class="py-1 px-2 truncate max-w-[150px]">' + t.name + '</td>' +
+                    '<td class="py-1 px-2 font-mono text-emerald-600 dark:text-emerald-400">' + s.residui + '</td>' +
+                    '<td class="py-1 px-2 font-mono text-indigo-600 dark:text-indigo-400">' + v.maxPuntata + '</td>' +
+                    '<td class="py-1 px-2">' + semaforo + '</td>' +
+                    '<td class="py-1 px-2 truncate max-w-[160px]">' + costretta + '</td>' + slot + '</tr>';
+            }).join('');
+        }
+
+        function renderOperazioni() { }
 
         function renderTutto() {
             renderTestata();
