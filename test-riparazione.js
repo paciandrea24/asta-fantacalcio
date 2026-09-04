@@ -125,6 +125,75 @@ var vMorto = CORE.valutaOfferta(conMorto, 'A', 20);
 eq('il fuori listone e il suggerito', vMorto.suggerito.player.id, 997);
 eq('il fuori listone e marcato', vMorto.suggerito.fuoriListone, true);
 
+// --- stato di prova completo ---
+function statoDiProva() {
+    var elenco = [
+        giocatore(1, 'D', 20),            // in rosa alla squadra 0
+        giocatore(2, 'D', 4),             // in rosa alla squadra 0
+        { id: 3, name: 'LIBERO', role: 'D', team: 'Milan', status: 'free', fvm: 40, qta: 12 },
+        { id: 4, name: 'LIBERO2', role: 'D', team: 'Roma', status: 'free', fvm: 20, qta: 8 }
+    ];
+    var stato = {
+        teams: [{ id: 0, name: 'Mia', budget: 74, players: [] }],
+        players: elenco,
+        historyLog: [],
+        riparazione: { bonusApplicato: false, bonusValore: 50, miaSquadraId: 0, ruoloCorrente: 'D' }
+    };
+    return CORE.sincronizzaRose(stato);
+}
+
+var s0 = statoDiProva();
+eq('sincronizzaRose ricostruisce la rosa', s0.teams[0].players.map(function (p) { return p.id; }), [1, 2]);
+eq('residui di partenza', CORE.statoSquadra(s0.teams[0]).residui, 50);
+
+// --- applicaOperazione ---
+var r1 = CORE.applicaOperazione(s0, { playerId: 3, teamId: 0, price: 60, svincolatoId: 1, ts: 111 });
+eq('operazione riuscita', r1.ok, true);
+eq('residui azzerati dopo acquisto a 60 e svincolo da 20', CORE.statoSquadra(r1.stato.teams[0]).residui, 0);
+eq('rosa ancora di 2 giocatori', r1.stato.teams[0].players.length, 2);
+eq('il comprato e in rosa', r1.stato.players.find(function (p) { return p.id === 3; }).soldTo, 0);
+eq('il comprato ha il prezzo pagato', r1.stato.players.find(function (p) { return p.id === 3; }).price, 60);
+eq('lo svincolato e libero', r1.stato.players.find(function (p) { return p.id === 1; }).status, 'free');
+eq('lo svincolato non ha piu prezzo', r1.stato.players.find(function (p) { return p.id === 1; }).price, undefined);
+eq('voce di cronologia', r1.stato.historyLog[0], {
+    playerId: 3, teamId: 0, price: 60, tipo: 'riparazione',
+    svincolatoId: 1, svincolatoPrezzo: 20, rimborso: 10, ts: 111
+});
+eq('lo stato di partenza non e stato mutato', s0.players.find(function (p) { return p.id === 3; }).status, 'free');
+
+var r2 = CORE.applicaOperazione(s0, { playerId: 3, teamId: 0, price: 61, svincolatoId: 1, ts: 112 });
+eq('operazione rifiutata per crediti insufficienti', r2.ok, false);
+
+var r3 = CORE.applicaOperazione(s0, { playerId: 3, teamId: 0, price: 10, svincolatoId: 99, ts: 113 });
+eq('operazione rifiutata: svincolato inesistente', r3.ok, false);
+
+// --- annullaOperazione: round trip ---
+var r4 = CORE.annullaOperazione(r1.stato, r1.stato.historyLog[0]);
+eq('annullo riuscito', r4.ok, true);
+eq('residui ripristinati', CORE.statoSquadra(r4.stato.teams[0]).residui, 50);
+eq('rosa ripristinata', r4.stato.teams[0].players.map(function (p) { return p.id; }).sort(), [1, 2]);
+eq('prezzo del ripristinato', r4.stato.players.find(function (p) { return p.id === 1; }).price, 20);
+eq('il comprato e tornato libero', r4.stato.players.find(function (p) { return p.id === 3; }).status, 'free');
+eq('cronologia svuotata', r4.stato.historyLog.length, 0);
+eq('budget ripristinato', r4.stato.teams[0].budget, 74);
+
+// --- annullo bloccato se il liberato e stato ricomprato ---
+// Dopo la prima operazione i residui sono 0: il riacquisto sta in piedi solo
+// a 1 credito, coperto dai 2 che rende lo svincolo del giocatore 2 (pagato 4).
+var dopoRiacquisto = CORE.applicaOperazione(r1.stato, { playerId: 1, teamId: 0, price: 1, svincolatoId: 2, ts: 114 });
+eq('riacquisto del giocatore liberato riuscito', dopoRiacquisto.ok, true);
+var r5 = CORE.annullaOperazione(dopoRiacquisto.stato, dopoRiacquisto.stato.historyLog[0]);
+eq('annullo rifiutato: il liberato e stato ricomprato', r5.ok, false);
+
+// --- applicaBonus ---
+var b1 = CORE.applicaBonus(s0, 50);
+eq('bonus applicato', b1.ok, true);
+eq('budget aumentato di 50', b1.stato.teams[0].budget, 124);
+eq('flag alzato', b1.stato.riparazione.bonusApplicato, true);
+var b2 = CORE.applicaBonus(b1.stato, 50);
+eq('secondo bonus rifiutato', b2.ok, false);
+eq('budget invariato dopo il rifiuto', b2.stato.teams[0].budget, 124);
+
 // --- riepilogo ---
 function riepilogo() { return { passati: passati, falliti: falliti, righe: righe }; }
 if (typeof module !== 'undefined' && module.exports) {

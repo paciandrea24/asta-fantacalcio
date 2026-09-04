@@ -106,6 +106,126 @@
         };
     }
 
+    function clona(stato) {
+        return JSON.parse(JSON.stringify(stato));
+    }
+
+    // Dopo ogni giro nel cloud players[] e teams[].players sono due copie
+    // JSON scollegate. Ricostruire le rose da players e l unico modo per
+    // garantire che prezzi e stati non divergano.
+    function sincronizzaRose(stato) {
+        var perId = {};
+        stato.teams.forEach(function (t) { t.players = []; perId[t.id] = t; });
+        stato.players.forEach(function (p) {
+            if (p.status === 'sold' && perId[p.soldTo]) perId[p.soldTo].players.push(p);
+        });
+        return stato;
+    }
+
+    // op = { playerId, teamId, price, svincolatoId, ts }
+    // Acquisto e svincolo sono una cosa sola: la rosa non passa mai per 26
+    // giocatori e i crediti non diventano mai negativi, nemmeno un istante.
+    function applicaOperazione(stato, op) {
+        var s = sincronizzaRose(clona(stato));
+        var team = s.teams.find(function (t) { return t.id === op.teamId; });
+        if (!team) return { ok: false, errore: 'Squadra non trovata.', stato: stato };
+
+        var acquistato = s.players.find(function (p) { return p.id === op.playerId; });
+        if (!acquistato) return { ok: false, errore: 'Giocatore non trovato nel listone.', stato: stato };
+        if (acquistato.status === 'sold') return { ok: false, errore: acquistato.name + ' non e piu svincolato.', stato: stato };
+
+        var prezzo = parseInt(op.price, 10);
+        if (isNaN(prezzo) || prezzo < 1) return { ok: false, errore: 'Prezzo non valido.', stato: stato };
+
+        var svincolato = null, prezzoSvincolato = 0, rimborsato = 0;
+        if (op.svincolatoId !== null && op.svincolatoId !== undefined) {
+            svincolato = s.players.find(function (p) { return p.id === op.svincolatoId; });
+            if (!svincolato) return { ok: false, errore: 'Giocatore da svincolare non trovato.', stato: stato };
+            if (svincolato.status !== 'sold' || svincolato.soldTo !== team.id) {
+                return { ok: false, errore: svincolato.name + ' non e in rosa a ' + team.name + '.', stato: stato };
+            }
+            if (svincolato.role !== acquistato.role) {
+                return { ok: false, errore: 'Lo svincolo deve essere di un giocatore dello stesso ruolo.', stato: stato };
+            }
+            prezzoSvincolato = svincolato.price || 0;
+            rimborsato = rimborso(svincolato);
+        } else if (serveSvincolo(team, acquistato.role)) {
+            return { ok: false, errore: 'Reparto ' + acquistato.role + ' pieno: serve svincolare un giocatore dello stesso ruolo.', stato: stato };
+        }
+
+        var residuiDopo = statoSquadra(team).residui - prezzo + rimborsato;
+        if (residuiDopo < 0) {
+            return { ok: false, errore: 'Crediti insufficienti: il massimo per un ' + acquistato.role + ' e ' + maxPuntata(team, acquistato.role) + '.', stato: stato };
+        }
+
+        if (svincolato) {
+            svincolato.status = 'free';
+            delete svincolato.soldTo;
+            delete svincolato.price;
+        }
+        acquistato.status = 'sold';
+        acquistato.soldTo = team.id;
+        acquistato.price = prezzo;
+        team.budget = (team.budget || 0) + rimborsato - prezzoSvincolato;
+
+        s.historyLog.push({
+            playerId: acquistato.id,
+            teamId: team.id,
+            price: prezzo,
+            tipo: 'riparazione',
+            svincolatoId: svincolato ? svincolato.id : null,
+            svincolatoPrezzo: prezzoSvincolato,
+            rimborso: rimborsato,
+            ts: op.ts || Date.now()
+        });
+
+        return { ok: true, stato: sincronizzaRose(s) };
+    }
+
+    function annullaOperazione(stato, voce) {
+        var s = sincronizzaRose(clona(stato));
+        var team = s.teams.find(function (t) { return t.id === voce.teamId; });
+        var acquistato = s.players.find(function (p) { return p.id === voce.playerId; });
+        if (!team || !acquistato) return { ok: false, errore: 'Operazione non ricostruibile.', stato: stato };
+        if (acquistato.status !== 'sold' || acquistato.soldTo !== team.id) {
+            return { ok: false, errore: acquistato.name + ' non e piu nella rosa di ' + team.name + ': annullo impossibile.', stato: stato };
+        }
+
+        var svincolato = null;
+        if (voce.svincolatoId !== null && voce.svincolatoId !== undefined) {
+            svincolato = s.players.find(function (p) { return p.id === voce.svincolatoId; });
+            if (!svincolato) return { ok: false, errore: 'Giocatore liberato non trovato.', stato: stato };
+            if (svincolato.status === 'sold') {
+                return { ok: false, errore: svincolato.name + ' e stato ricomprato nel frattempo: annullo impossibile.', stato: stato };
+            }
+        }
+
+        acquistato.status = 'free';
+        delete acquistato.soldTo;
+        delete acquistato.price;
+        if (svincolato) {
+            svincolato.status = 'sold';
+            svincolato.soldTo = team.id;
+            svincolato.price = voce.svincolatoPrezzo;
+        }
+        team.budget = (team.budget || 0) - voce.rimborso + voce.svincolatoPrezzo;
+        s.historyLog = s.historyLog.filter(function (v) {
+            return !(v.ts === voce.ts && v.playerId === voce.playerId && v.teamId === voce.teamId);
+        });
+
+        return { ok: true, stato: sincronizzaRose(s) };
+    }
+
+    function applicaBonus(stato, valore) {
+        var s = clona(stato);
+        if (!s.riparazione) s.riparazione = { bonusApplicato: false, bonusValore: valore, miaSquadraId: null, ruoloCorrente: 'P' };
+        if (s.riparazione.bonusApplicato) return { ok: false, errore: 'Il bonus di inizio asta e gia stato applicato.', stato: stato };
+        s.teams.forEach(function (t) { t.budget = (t.budget || 0) + valore; });
+        s.riparazione.bonusApplicato = true;
+        s.riparazione.bonusValore = valore;
+        return { ok: true, stato: sincronizzaRose(s) };
+    }
+
     var API = {
         MAX_SLOTS: MAX_SLOTS,
         ROSA_PIENA: ROSA_PIENA,
@@ -115,7 +235,11 @@
         candidatiSvincolo: candidatiSvincolo,
         ordinaCandidati: ordinaCandidati,
         maxPuntata: maxPuntata,
-        valutaOfferta: valutaOfferta
+        valutaOfferta: valutaOfferta,
+        sincronizzaRose: sincronizzaRose,
+        applicaOperazione: applicaOperazione,
+        annullaOperazione: annullaOperazione,
+        applicaBonus: applicaBonus
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = API;
