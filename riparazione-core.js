@@ -31,11 +31,50 @@
         };
     }
 
+    // Nella riparazione la rosa e piena e il reparto anche: e la norma,
+    // non un errore. Serve solo a decidere se lo svincolo e obbligatorio.
+    function serveSvincolo(team, ruolo) {
+        var s = statoSquadra(team);
+        return s.slotOccupati[ruolo] >= MAX_SLOTS[ruolo] || s.totale >= ROSA_PIENA;
+    }
+
+    function candidatiSvincolo(team, ruolo) {
+        return (((team && team.players) || [])
+            .filter(function (p) { return p.role === ruolo; })
+            .map(function (p) {
+                return { player: p, rimborso: rimborso(p), fuoriListone: !!p.fuoriListone };
+            }));
+    }
+
+    // Prima i fuori listone col rimborso piu alto: hanno lasciato la Serie A,
+    // non valgono nulla in campo, quindi tanto vale incassare il massimo.
+    // Poi gli altri col rimborso piu basso, per sacrificare il meno possibile.
+    function ordinaCandidati(lista) {
+        return lista.slice().sort(function (a, b) {
+            if (a.fuoriListone !== b.fuoriListone) return a.fuoriListone ? -1 : 1;
+            if (a.fuoriListone) return b.rimborso - a.rimborso;
+            return a.rimborso - b.rimborso;
+        });
+    }
+
+    function maxPuntata(team, ruolo) {
+        var residui = statoSquadra(team).residui;
+        if (!serveSvincolo(team, ruolo)) return Math.max(0, residui);
+        var cand = candidatiSvincolo(team, ruolo);
+        if (cand.length === 0) return 0;
+        var migliore = cand.reduce(function (max, c) { return c.rimborso > max ? c.rimborso : max; }, 0);
+        return Math.max(0, residui + migliore);
+    }
+
     var API = {
         MAX_SLOTS: MAX_SLOTS,
         ROSA_PIENA: ROSA_PIENA,
         rimborso: rimborso,
-        statoSquadra: statoSquadra
+        statoSquadra: statoSquadra,
+        serveSvincolo: serveSvincolo,
+        candidatiSvincolo: candidatiSvincolo,
+        ordinaCandidati: ordinaCandidati,
+        maxPuntata: maxPuntata
     };
 
     if (typeof module !== 'undefined' && module.exports) module.exports = API;
