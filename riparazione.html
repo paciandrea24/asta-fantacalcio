@@ -19,10 +19,13 @@
     </style>
 </head>
 
-<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans p-2 md:p-4 min-h-screen transition-colors duration-200">
-    <div class="max-w-[1600px] mx-auto space-y-4">
+<!-- Da lg in su l'altezza e bloccata a schermo e scorrono solo le liste interne,
+     cosi in asta non si scrolla mai. Sotto lg le colonne si impilano e la pagina
+     torna a scorrere normalmente: bloccarla la taglierebbe senza via d'uscita. -->
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans p-2 md:p-3 min-h-screen lg:h-screen lg:overflow-hidden flex flex-col transition-colors duration-200">
+    <div class="max-w-[1600px] w-full mx-auto flex flex-col gap-2 md:gap-3 flex-1 min-h-0">
 
-        <header class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 flex flex-wrap justify-between items-center gap-3">
+        <header class="shrink-0 bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-2.5 flex flex-wrap justify-between items-center gap-3">
             <div class="flex items-center gap-3">
                 <h1 class="text-lg font-black text-slate-800 dark:text-slate-100">Asta di Riparazione</h1>
                 <span id="cloud-status-badge" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center">
@@ -38,6 +41,11 @@
                         <option value="">— scegli —</option>
                     </select>
                 </label>
+
+                <button type="button" id="btn-cronologia" onclick="apriCronologia()"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition shadow-2xs">
+                    Cronologia
+                </button>
 
                 <button type="button" id="btn-bonus" onclick="applicaBonusIniziale()"
                     class="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white text-xs font-bold py-2 px-3 rounded-lg transition shadow-2xs">
@@ -57,38 +65,60 @@
         </header>
 
         <!-- FASE: SI PROCEDE DAI PORTIERI AGLI ATTACCANTI -->
-        <div id="barra-fase" class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-2">
+        <div id="barra-fase" class="shrink-0 bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-2 flex flex-wrap items-center gap-2">
             <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 px-1">Reparto in asta</span>
             <div id="fase-bottoni" class="flex gap-1.5"></div>
             <span id="diagnostica" class="ml-auto text-[11px] text-slate-500 dark:text-slate-400 font-mono"></span>
         </div>
 
         <!-- AVVISO DATI MANCANTI O VECCHI -->
-        <div id="avviso-dati" class="hidden bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 px-4 py-3 rounded-xl text-sm shadow-2xs"></div>
+        <div id="avviso-dati" class="hidden shrink-0 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 px-4 py-3 rounded-xl text-sm shadow-2xs"></div>
 
-        <div id="contenuto" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            <section class="lg:col-span-5 space-y-3">
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 space-y-3">
-                    <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Banco d'asta</h2>
+        <div id="contenuto" class="grid grid-cols-1 lg:grid-cols-12 gap-3 flex-1 min-h-0">
+            <section class="lg:col-span-5 flex flex-col gap-3 min-h-0">
+                <!-- La lista svincolati e l'unico blocco elastico: si prende
+                     lo spazio che avanza e scorre al suo interno. -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 flex flex-col gap-2 flex-1 min-h-0">
+                    <h2 class="shrink-0 text-sm font-black text-slate-700 dark:text-slate-200">Banco d'asta</h2>
 
                     <input type="text" id="input-ricerca" oninput="aggiornaRicerca(this.value)" placeholder="Cerca uno svincolato..."
-                        class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 outline-hidden focus:ring-2 focus:ring-indigo-500">
-                    <div id="lista-svincolati" class="max-h-64 overflow-y-auto space-y-1 pr-1"></div>
+                        class="shrink-0 w-full px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 dark:text-slate-100 outline-hidden focus:ring-2 focus:ring-indigo-500">
+                    <div id="lista-svincolati" class="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1"></div>
 
-                    <div id="box-selezione" class="space-y-2"></div>
+                    <div id="box-selezione" class="shrink-0 space-y-2"></div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-                    <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chi svincolare</h2>
-                    <div id="lista-candidati" class="space-y-1"></div>
+                <div class="shrink-0 bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+                    <div class="flex items-baseline justify-between gap-2 flex-wrap">
+                        <h2 class="text-sm font-black text-slate-700 dark:text-slate-200">Chi svincolare</h2>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500">
+                            <strong>rende</strong> = metà del pagato, arrotondata per difetto (minimo 1) · <strong>resta</strong> = crediti dopo l'operazione
+                        </p>
+                    </div>
+                    <div id="lista-candidati" class="space-y-1 max-h-52 overflow-y-auto pr-1"></div>
                     <button type="button" id="btn-conferma" onclick="confermaOperazione()"
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-black py-2.5 rounded-lg transition shadow-2xs">
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white text-sm font-black py-2 rounded-lg transition shadow-2xs">
                         Conferma operazione
                     </button>
                 </div>
             </section>
 
-            <section id="colonna-destra" class="lg:col-span-7 space-y-3"></section>
+            <section id="colonna-destra" class="lg:col-span-7 flex flex-col gap-3 min-h-0"></section>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- OVERLAY CRONOLOGIA OPERAZIONI              -->
+    <!-- ========================================== -->
+    <div id="modal-cronologia" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-2xs z-50 flex items-center justify-center p-4"
+        onclick="if (event.target === this) chiudiCronologia()">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-3xl max-h-[85vh] flex flex-col">
+            <div class="shrink-0 flex justify-between items-center p-3 border-b border-slate-200 dark:border-slate-700">
+                <h2 class="text-sm font-black text-slate-800 dark:text-slate-100">Operazioni dell'asta di riparazione</h2>
+                <button type="button" onclick="chiudiCronologia()"
+                    class="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 font-black text-xl leading-none px-2">&times;</button>
+            </div>
+            <div id="lista-operazioni" class="flex-1 min-h-0 overflow-y-auto p-3 space-y-1"></div>
         </div>
     </div>
 
@@ -279,6 +309,10 @@
             btn.textContent = riparazione.bonusApplicato
                 ? '+' + (riparazione.bonusValore || 50) + ' crediti già assegnati'
                 : '+' + (riparazione.bonusValore || 50) + ' crediti a tutti';
+
+            var quante = historyLog.filter(function (v) { return v.tipo === 'riparazione'; }).length;
+            document.getElementById('btn-cronologia').textContent =
+                quante > 0 ? 'Cronologia (' + quante + ')' : 'Cronologia';
         }
 
         // --- BANCO D'ASTA ---
@@ -466,9 +500,9 @@
                         (c.copre ? ' onclick="selezionaSvincolato(' + c.player.id + ')"' : '') + '>' +
                         '<div class="flex items-center gap-1.5 truncate pr-1"><span class="font-bold">' + c.player.name + '</span>' + badgeMorto + '</div>' +
                         '<div class="flex items-center gap-2 shrink-0 font-mono">' +
-                        '<span title="Prezzo pagato">pagato ' + (c.player.price || 0) + '</span>' +
-                        '<span class="font-black text-emerald-600 dark:text-emerald-400" title="Crediti restituiti">+' + c.rimborso + '</span>' +
-                        '<span title="Residui dopo l\'operazione">&rarr; ' + c.residuiDopo + '</span>' +
+                        '<span class="text-slate-400 dark:text-slate-500" title="Quanto era costato all\'asta">pagato ' + (c.player.price || 0) + '</span>' +
+                        '<span class="font-black text-emerald-600 dark:text-emerald-400" title="Crediti che tornano indietro svincolandolo">rende +' + c.rimborso + '</span>' +
+                        '<span class="font-bold" title="Crediti che restano dopo l\'operazione">resta ' + c.residuiDopo + '</span>' +
                         '</div></div>';
                 }).join('');
 
@@ -487,18 +521,15 @@
             var box = document.getElementById('colonna-destra');
             if (!box) return;
             box.innerHTML =
-                '<div id="mio-pannello" class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3"></div>' +
-                '<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3">' +
-                '<h2 class="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Avversari</h2>' +
-                '<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead>' +
+                '<div id="mio-pannello" class="shrink-0 bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3"></div>' +
+                '<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3 flex flex-col flex-1 min-h-0">' +
+                '<h2 class="shrink-0 text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Avversari</h2>' +
+                '<div class="flex-1 min-h-0 overflow-auto"><table class="w-full text-[11px]"><thead>' +
                 '<tr class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">' +
                 '<th class="py-1 px-2">Squadra</th><th class="py-1 px-2">Residui</th><th class="py-1 px-2">Max ' + riparazione.ruoloCorrente + '</th>' +
                 '<th class="py-1 px-2">Al prezzo</th><th class="py-1 px-2">Svincolerebbe</th>' +
                 '<th class="py-1 px-1 text-center">P</th><th class="py-1 px-1 text-center">D</th><th class="py-1 px-1 text-center">C</th><th class="py-1 px-1 text-center">A</th>' +
-                '</tr></thead><tbody id="corpo-tabellone"></tbody></table></div></div>' +
-                '<div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xs border border-slate-200 dark:border-slate-700 p-3">' +
-                '<h2 class="text-sm font-black text-slate-700 dark:text-slate-200 mb-2">Operazioni</h2>' +
-                '<div id="lista-operazioni" class="space-y-1 max-h-64 overflow-y-auto pr-1"></div></div>';
+                '</tr></thead><tbody id="corpo-tabellone"></tbody></table></div></div>';
             renderMioPannello();
             renderTabellone();
             renderOperazioni();
@@ -594,6 +625,15 @@
             if (campoRicerca) campoRicerca.value = '';
             salvaStato();
             renderTutto();
+        }
+
+        function apriCronologia() {
+            renderOperazioni();
+            document.getElementById('modal-cronologia').classList.remove('hidden');
+        }
+
+        function chiudiCronologia() {
+            document.getElementById('modal-cronologia').classList.add('hidden');
         }
 
         function renderOperazioni() {
